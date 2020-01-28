@@ -9,10 +9,10 @@ namespace LambdaBiz
     {
         void CreateOrchestration(string orchestrationId);
         void CreateOrchestration(string orchestrationId,IServerlessContext context);
-        T CallTask<T>(string functionName);
-        Task<T> CallTaskAsync<T>(string functionName);
-        object CallTask(string functionName);
-        Task<object> CallTaskAsync(string functionName);
+        T CallTask<T>(string functionName, object input);
+        Task<T> CallTaskAsync<T>(string functionName,object input);
+        object CallTask(string functionName, object input);
+        Task<object> CallTaskAsync(string functionName, object input);
         T WaitForEvent<T>(string eventName);
         Task<T> WaitForEventAsync<T>(string eventName);
         object WaitForEvent(string eventName);

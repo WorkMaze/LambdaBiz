@@ -2,19 +2,20 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace LambdaBiz
 {
     public abstract class OrchestrationContext
     {
-        protected abstract IEnumerable<Activity> GetCurrentContext();
-        protected Status GetStatus(ActivityType activityType, string name)
+        protected abstract Task<IEnumerable<Activity>> GetCurrentContext();
+        protected async Task<Status> GetStatus(ActivityType activityType, string name)
         {
-            var activities = GetCurrentContext();
+            var activityList = await GetCurrentContext();
 
             Status status = Status.FAILED;
 
-            foreach(var activity in activities)
+            foreach(var activity in activityList)
             {
                 if(activity.Name == name && activityType == activity.ActivityType)
                 {
@@ -25,5 +26,21 @@ namespace LambdaBiz
 
             return status;
         }
+
+		protected Activity FindActivity(ActivityType activityType, string scheduledId, IEnumerable<Activity> activityList)
+		{
+			Activity retActivity = null;
+
+			foreach (var activity in activityList)
+			{
+				if (activity.ScheduledId == scheduledId && activityType == activity.ActivityType)
+				{
+					retActivity = activity;
+					break;
+				}
+			}
+
+			return retActivity;
+		}
     }
 }

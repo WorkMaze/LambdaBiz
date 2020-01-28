@@ -9,5 +9,6 @@ namespace LambdaBiz.Model
         public string Name { get; set; }
         public Status Status { get; set; }
         public ActivityType ActivityType { get; set; }
+		public string ScheduledId { get; set; }
     }
 }
