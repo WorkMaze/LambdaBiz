@@ -12,36 +12,27 @@ namespace LambdaBiz.AWS
 	public class AWSOrchestration : OrchestrationContext, IOrchestration
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
-		public AWSOrchestration(string awsAccessKey, string awsSecretAccessKey, string awsRegion)
+		internal AWSOrchestration(string awsAccessKey, string awsSecretAccessKey, string awsRegion)
 		{
 			_amazonSimpleWorkflowClient = new AmazonSimpleWorkflowClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
+			
 		}
-		public T CallTask<T>(string functionName, object input)
+		public Task<T> CallTaskAsync<T>(string functionName, object inpu, string idt)
 		{
 			throw new NotImplementedException();
 		}
 
-		public object CallTask(string functionName, object input)
+		public Task<object> CallTaskAsync(string functionName, object input, string id)
 		{
 			throw new NotImplementedException();
 		}
 
-		public Task<T> CallTaskAsync<T>(string functionName, object input)
+		public Task CompleteWorkflowAsync()
 		{
 			throw new NotImplementedException();
 		}
 
-		public Task<object> CallTaskAsync(string functionName, object input)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void CreateOrchestration(string orchestrationId)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void CreateOrchestration(string orchestrationId, IServerlessContext context)
+		public Task FailWorkflowAsync()
 		{
 			throw new NotImplementedException();
 		}
@@ -56,22 +47,17 @@ namespace LambdaBiz.AWS
 			throw new NotImplementedException();
 		}
 
-		public T WaitForEvent<T>(string eventName)
+		public Task StartWorkflowAsync()
 		{
 			throw new NotImplementedException();
 		}
 
-		public object WaitForEvent(string eventName)
+		public Task<T> WaitForEventAsync<T>(string eventName, string id)
 		{
 			throw new NotImplementedException();
 		}
 
-		public Task<T> WaitForEventAsync<T>(string eventName)
-		{
-			throw new NotImplementedException();
-		}
-
-		public Task<object> WaitForEventAsync(string eventName)
+		public Task<object> WaitForEventAsync(string eventName, string id)
 		{
 			throw new NotImplementedException();
 		}
@@ -85,7 +71,7 @@ namespace LambdaBiz.AWS
 			string nextPageToken = null;
 			do
 			{
-				PollForDecisionTaskRequest decisionTaskRequest = new PollForDecisionTaskRequest
+				var decisionTaskRequest = new PollForDecisionTaskRequest
 				{
 					//Domain = _domain,
 					Identity = Guid.NewGuid().ToString(),

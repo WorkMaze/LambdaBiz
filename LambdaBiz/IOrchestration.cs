@@ -7,17 +7,14 @@ namespace LambdaBiz
 {
     public interface IOrchestration
     {
-        void CreateOrchestration(string orchestrationId);
-        void CreateOrchestration(string orchestrationId,IServerlessContext context);
-        T CallTask<T>(string functionName, object input);
-        Task<T> CallTaskAsync<T>(string functionName,object input);
-        object CallTask(string functionName, object input);
-        Task<object> CallTaskAsync(string functionName, object input);
-        T WaitForEvent<T>(string eventName);
-        Task<T> WaitForEventAsync<T>(string eventName);
-        object WaitForEvent(string eventName);
-        Task<object> WaitForEventAsync(string eventName);
+        Task<T> CallTaskAsync<T>(string functionName,object input,string id);
+        Task<object> CallTaskAsync(string functionName, object input, string id);
+        Task<T> WaitForEventAsync<T>(string eventName, string id);
+        Task<object> WaitForEventAsync(string eventName, string id);
         Task RaiseEventAsync(string eventName,string orchestrationId,object eventArgs);
         Task StartTimerAsync(string timerName, TimeSpan timeSpan);
+		Task StartWorkflowAsync();
+		Task CompleteWorkflowAsync();
+		Task FailWorkflowAsync();
     }
 }

@@ -20,20 +20,6 @@ namespace LambdaBiz.AWS
 			_lambdaClient = new AmazonLambdaClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
 		}
 
-		public T CallTask<T>(string functionName, object input)
-		{
-			var result = CallTaskAsync<T>(functionName, input);
-			result.Wait();
-			return result.Result;
-		}
-
-		public object CallTask(string functionName, object input)
-		{
-			var result = CallTaskAsync(functionName, input);
-			result.Wait();
-			return result.Result;
-		}
-
 		public async Task<T> CallTaskAsync<T>(string functionName, object input)
 		{
 			var lambdaResponse = await CallLambdaAsync(functionName, input);
