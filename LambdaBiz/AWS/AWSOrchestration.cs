@@ -121,7 +121,9 @@ namespace LambdaBiz.AWS
 								ActivityType = Model.ActivityType.Task,
 								Name = historyEvent.LambdaFunctionScheduledEventAttributes.Name,
 								ScheduledId = historyEvent.LambdaFunctionScheduledEventAttributes.Id,
-								Status = Status.STARTED
+								UniqueId = historyEvent.LambdaFunctionScheduledEventAttributes.Control,
+								Status = Status.STARTED,
+								
 							};
 
 							activityList.Add(activity);
@@ -156,6 +158,7 @@ namespace LambdaBiz.AWS
 								ActivityType = Model.ActivityType.Timer,
 								Name = historyEvent.TimerStartedEventAttributes.TimerId,
 								ScheduledId = historyEvent.TimerStartedEventAttributes.TimerId,
+								UniqueId = historyEvent.TimerStartedEventAttributes.Control,
 								Status = Status.STARTED
 							};
 
@@ -168,7 +171,30 @@ namespace LambdaBiz.AWS
 
 						activity.Status = Status.SUCCEEDED;
 					}
-					
+					if (historyEvent.EventType == EventType.ActivityTaskScheduled)
+					{
+						if (activityList == null)
+						{
+							activityList = new List<Activity>();
+							var activity = new Activity
+							{
+								ActivityType = Model.ActivityType.Task,
+								Name = historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Name,
+								ScheduledId = historyEvent.ActivityTaskScheduledEventAttributes.ActivityId,
+								UniqueId = historyEvent.ActivityTaskScheduledEventAttributes.Control,
+								Status = Status.STARTED,
+								
+							};
+
+							activityList.Add(activity);
+						}						
+					}
+					if (historyEvent.EventType == EventType.ActivityTaskCompleted)
+					{
+						var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskCompletedEventAttributes.ScheduledEventId.ToString(), activityList);
+
+						activity.Status = Status.SUCCEEDED;
+					}
 				}
 			}
 

@@ -27,13 +27,13 @@ namespace LambdaBiz
             return status;
         }
 
-		protected Activity FindActivity(ActivityType activityType, string scheduledId, IEnumerable<Activity> activityList)
+		protected Activity FindActivity(ActivityType activityType, string scheduleId, IEnumerable<Activity> activityList)
 		{
 			Activity retActivity = null;
 
 			foreach (var activity in activityList)
 			{
-				if (activity.ScheduledId == scheduledId && activityType == activity.ActivityType)
+				if (activity.ScheduledId == scheduleId && activityType == activity.ActivityType)
 				{
 					retActivity = activity;
 					break;
