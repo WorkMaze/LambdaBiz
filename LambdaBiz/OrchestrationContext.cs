@@ -8,16 +8,14 @@ namespace LambdaBiz
 {
     public abstract class OrchestrationContext
     {
-        protected abstract Task<IEnumerable<Activity>> GetCurrentContext();
-        protected async Task<Status> GetStatus(ActivityType activityType, string name)
+        protected abstract Task<Workflow> GetCurrentContext();
+        protected async Task<Status> GetStatus(ActivityType activityType, string name,string uniqueId, Workflow workflow)
         {
-            var activityList = await GetCurrentContext();
+            Status status = Status.NONE;
 
-            Status status = Status.FAILED;
-
-            foreach(var activity in activityList)
+            foreach(var activity in workflow.Activities)
             {
-                if(activity.Name == name && activityType == activity.ActivityType)
+                if(activity.Name == name && activityType == activity.ActivityType && activity.UniqueId == uniqueId)
                 {
                     status = activity.Status;
                     break;
@@ -42,5 +40,21 @@ namespace LambdaBiz
 
 			return retActivity;
 		}
-    }
+
+		public Activity FindActivity(ActivityType activityType, string uniqueId,string name,IEnumerable<Activity> activityList)
+		{
+			Activity retActivity = null;
+
+			foreach (var activity in activityList)
+			{
+				if (activity.UniqueId == uniqueId && activityType == activity.ActivityType && activity.Name == name)
+				{
+					retActivity = activity;
+					break;
+				}
+			}
+
+			return retActivity;
+		}
+	}
 }

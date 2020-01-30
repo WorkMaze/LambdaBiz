@@ -13,8 +13,8 @@ namespace LambdaBiz
         Task<object> WaitForEventAsync(string eventName, string id);
         Task RaiseEventAsync(string eventName,string orchestrationId,object eventArgs);
         Task StartTimerAsync(string timerName, TimeSpan timeSpan);
-		Task StartWorkflowAsync();
-		Task CompleteWorkflowAsync();
-		Task FailWorkflowAsync();
+		Task StartWorkflowAsync(object input);
+		Task CompleteWorkflowAsync(object result);
+		Task FailWorkflowAsync(object error);
     }
 }

@@ -7,7 +7,7 @@ namespace LambdaBiz
 {
 	public interface IOrchestrationFactory
 	{
-		IOrchestration CreateOrchestration(string orchestrationId);
-		IOrchestration CreateOrchestration(string orchestrationId, IServerlessContext context);
+		Task<IOrchestration>  CreateOrchestrationAsync(string orchestrationId);
+		Task<IOrchestration>  CreateOrchestrationAsync(string orchestrationId, IServerlessContext context);
 	}
 }

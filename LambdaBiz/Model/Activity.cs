@@ -11,5 +11,7 @@ namespace LambdaBiz.Model
         public ActivityType ActivityType { get; set; }
 		public string UniqueId { get; set; }
 		public string ScheduledId { get; set; }
+		public string FailureDetails { get; set; }
+		public string Result { get; set; }
     }
 }
