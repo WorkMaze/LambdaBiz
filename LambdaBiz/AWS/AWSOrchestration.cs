@@ -20,6 +20,8 @@ namespace LambdaBiz.AWS
 			_orchestrationId = orchestrationId;
 
 		}
+
+		#region Task
 		public async Task<T> CallTaskAsync<T>(string functionName, object input, string id)
 		{			
 			var result = await CallLambdaAsync(functionName, input, id);
@@ -27,6 +29,12 @@ namespace LambdaBiz.AWS
 			return JsonConvert.DeserializeObject<T>(result);
 		}
 
+		public async Task<object> CallTaskAsync(string functionName, object input, string id)
+		{
+			var result = await CallLambdaAsync(functionName, input, id);
+
+			return JsonConvert.DeserializeObject(result);
+		}
 		private async Task<string> CallLambdaAsync(string functionName, object input, string id)
 		{
 			var result = string.Empty;
@@ -86,16 +94,147 @@ namespace LambdaBiz.AWS
 			return result;
 		}
 
-		public async Task<object> CallTaskAsync(string functionName, object input, string id)
+		#endregion
+
+		#region Event
+
+		public async Task RaiseEventAsync(string eventName, string orchestrationId, object eventArgs)
 		{
-			return await CallLambdaAsync(functionName, input, id);
+			await _amazonSimpleWorkflowClient.SignalWorkflowExecutionAsync(new SignalWorkflowExecutionRequest
+			{
+				Input = JsonConvert.SerializeObject(eventArgs),
+				WorkflowId = _orchestrationId,
+				Domain = Constants.LAMBDA_BIZ_DOMAIN,
+				SignalName = eventName
+			});
+			
+		}
+
+		public async  Task<T> WaitForEventAsync<T>(string eventName)
+		{
+			var result = await WaitForSignal(eventName);
+
+			return JsonConvert.DeserializeObject<T>(result);
+		}
+
+		public async Task<object> WaitForEventAsync(string eventName)
+		{
+			var result = await WaitForSignal(eventName);
+
+			return JsonConvert.DeserializeObject(result);
+		}
+
+		private async Task<string> WaitForSignal(string signalName)
+		{
+			var result = string.Empty;
+
+			var workflowContext = await GetCurrentContext();
+			Status waitStatus = Status.STARTED;
+			Workflow workflowWaitContext = null;
+			if (workflowContext != null && workflowContext.Status == Status.STARTED)
+			{
+				do
+				{
+					workflowWaitContext = await GetCurrentContext();
+					waitStatus = await GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
+				}
+				while (waitStatus != Status.SUCCEEDED);
+
+				var activity = FindActivity(Model.ActivityType.Event, signalName, signalName, workflowWaitContext.Activities);
+
+				result = activity.Result;
+				
+			}
+
+			return result;
+		}
+
+		#endregion
+
+		#region Timer
+		public async Task StartTimerAsync(string timerName, TimeSpan timeSpan)
+		{
+			
+			var workflowContext = await GetCurrentContext();
+
+			if (workflowContext != null && workflowContext.Status == Status.STARTED)
+			{
+				var status = await GetStatus(Model.ActivityType.Task, timerName, timerName, workflowContext);
+
+				if (status == Status.NONE)
+				{
+					var decisionRequest = new RespondDecisionTaskCompletedRequest
+					{
+						TaskToken = workflowContext.ReferenceToken,
+						Decisions = new List<Decision>
+						{
+							new Decision
+							{
+								DecisionType = DecisionType.StartTimer,
+								StartTimerDecisionAttributes = new StartTimerDecisionAttributes
+								{
+									TimerId = timerName,
+									StartToFireTimeout = timeSpan.TotalSeconds.ToString()
+								}
+							}
+						}
+					};
+
+					await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+
+					var waitStatus = Status.NONE;
+					Workflow workflowWaitContext = null;
+
+
+					do
+					{
+						workflowWaitContext = await GetCurrentContext();
+						waitStatus = await GetStatus(Model.ActivityType.Task, timerName, timerName, workflowWaitContext);
+					}
+					while (waitStatus != Status.SUCCEEDED);
+
+					var activity = FindActivity(Model.ActivityType.Task, timerName, timerName, workflowWaitContext.Activities);
+
+					
+				}
+			}
+
+			
+		}
+		#endregion
+
+		#region Workflow
+
+		public async Task StartWorkflowAsync(object input)
+		{
+			var workflowContext = GetCurrentContext();
+
+			if (workflowContext == null)
+			{
+				await _amazonSimpleWorkflowClient.StartWorkflowExecutionAsync(new StartWorkflowExecutionRequest
+				{
+					WorkflowId = _orchestrationId,
+					Domain = Constants.LAMBDA_BIZ_DOMAIN,
+					WorkflowType = new WorkflowType
+					{
+						Name = Constants.LAMBDA_BIZ_WORKFLOW_TYPE,
+						Version = Constants.LAMBDA_BIZ_TYPE_VERSION
+					},
+					Input = JsonConvert.SerializeObject(input),
+					TaskList = new TaskList
+					{
+						Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
+					}
+				});
+
+			}
 		}
 
 		public async Task CompleteWorkflowAsync(object result)
 		{
 			var workflowContext = await GetCurrentContext();
 
-			if(workflowContext != null)
+			if (workflowContext != null)
 			{
 				var decisionRequest = new RespondDecisionTaskCompletedRequest
 				{
@@ -143,49 +282,9 @@ namespace LambdaBiz.AWS
 			}
 		}
 
-		public Task RaiseEventAsync(string eventName, string orchestrationId, object eventArgs)
-		{
-			throw new NotImplementedException();
-		}
+		#endregion
 
-		public Task StartTimerAsync(string timerName, TimeSpan timeSpan)
-		{
-			throw new NotImplementedException();
-		}
-
-		public async Task StartWorkflowAsync(object input)
-		{
-			var workflowContext = GetCurrentContext();
-
-			if (workflowContext == null)
-			{
-				await _amazonSimpleWorkflowClient.StartWorkflowExecutionAsync(new StartWorkflowExecutionRequest
-				{
-					WorkflowId = _orchestrationId,
-					Domain = Constants.LAMBDA_BIZ_DOMAIN,
-					WorkflowType = new WorkflowType
-					{
-						Name = Constants.LAMBDA_BIZ_WORKFLOW_TYPE,
-						Version = Constants.LAMBDA_BIZ_TYPE_VERSION
-					},
-					Input = JsonConvert.SerializeObject(input),
-					TaskList = new TaskList
-					{
-						Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
-					}
-				});
-			}
-		}
-
-		public Task<T> WaitForEventAsync<T>(string eventName, string id)
-		{
-			throw new NotImplementedException();
-		}
-
-		public Task<object> WaitForEventAsync(string eventName, string id)
-		{
-			throw new NotImplementedException();
-		}
+		#region Polling
 
 		protected override async Task<Workflow> GetCurrentContext()
 		{
@@ -232,6 +331,23 @@ namespace LambdaBiz.AWS
 
 				foreach (HistoryEvent historyEvent in historyEvents)
 				{
+					if (historyEvent.EventType == EventType.WorkflowExecutionSignaled)
+					{
+						if (activityList == null)
+							activityList = new List<Activity>();
+
+						var activity = new Activity
+						{
+							Result = historyEvent.WorkflowExecutionSignaledEventAttributes.Input,
+							Status = Status.SUCCEEDED,
+							ActivityType = Model.ActivityType.Event,
+							Name = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
+							ScheduledId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
+							UniqueId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName
+						};
+
+						activityList.Add(activity);
+					}
 					if(historyEvent.EventType == EventType.WorkflowExecutionStarted)
 					{
 						
@@ -289,7 +405,7 @@ namespace LambdaBiz.AWS
 							ActivityType = Model.ActivityType.Timer,
 							Name = historyEvent.TimerStartedEventAttributes.TimerId,
 							ScheduledId = historyEvent.TimerStartedEventAttributes.TimerId,
-							UniqueId = historyEvent.TimerStartedEventAttributes.Control,
+							UniqueId = historyEvent.TimerStartedEventAttributes.TimerId,
 							Status = Status.STARTED
 						};
 
@@ -331,5 +447,7 @@ namespace LambdaBiz.AWS
 			workflow.Activities = activityList;
 			return workflow;
 		}
+
+		#endregion
 	}
 }

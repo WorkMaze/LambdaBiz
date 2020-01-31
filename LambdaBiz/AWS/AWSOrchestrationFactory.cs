@@ -48,9 +48,5 @@ namespace LambdaBiz.AWS
 		}
 				
 
-		public async Task<IOrchestration> CreateOrchestrationAsync(string orchestrationId, IServerlessContext context)
-		{
-			return await CreateOrchestrationAsync(orchestrationId);
-		}
 	}
 }
