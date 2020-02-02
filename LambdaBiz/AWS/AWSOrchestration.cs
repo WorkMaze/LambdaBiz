@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.DynamoDBv2;
 using Amazon.SimpleWorkflow;
 using Amazon.SimpleWorkflow.Model;
 using LambdaBiz.Model;
@@ -14,12 +15,13 @@ namespace LambdaBiz.AWS
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
 		private string _orchestrationId;
-		internal AWSOrchestration(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient,string orchestrationId)
+        private IPersistantStore _store;
+        internal AWSOrchestration(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient,string orchestrationId,IPersistantStore store)
 		{
 			_amazonSimpleWorkflowClient = amazonSimpleWorkflowClient;
 			_orchestrationId = orchestrationId;
-
-		}
+            _store = store;
+        }
 
 		#region Task
 		public async Task<T> CallTaskAsync<T>(string functionName, object input, string id)
@@ -43,7 +45,7 @@ namespace LambdaBiz.AWS
 
 			if (workflowContext != null && workflowContext.Status == Status.STARTED)
 			{
-				var status = await GetStatus(Model.ActivityType.Task, functionName, id, workflowContext);
+				var status = GetStatus(Model.ActivityType.Task, functionName, id, workflowContext);
 
 				if (status == Status.NONE)
 				{
@@ -75,7 +77,7 @@ namespace LambdaBiz.AWS
 					do
 					{
 						workflowWaitContext = await GetCurrentContext();
-						waitStatus = await GetStatus(Model.ActivityType.Task, functionName, id, workflowWaitContext);
+						waitStatus = GetStatus(Model.ActivityType.Task, functionName, id, workflowWaitContext);
 					}
 					while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
@@ -136,7 +138,7 @@ namespace LambdaBiz.AWS
 				do
 				{
 					workflowWaitContext = await GetCurrentContext();
-					waitStatus = await GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
+					waitStatus = GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
 				}
 				while (waitStatus != Status.SUCCEEDED);
 
@@ -159,7 +161,7 @@ namespace LambdaBiz.AWS
 
 			if (workflowContext != null && workflowContext.Status == Status.STARTED)
 			{
-				var status = await GetStatus(Model.ActivityType.Task, timerName, timerName, workflowContext);
+				var status = GetStatus(Model.ActivityType.Task, timerName, timerName, workflowContext);
 
 				if (status == Status.NONE)
 				{
@@ -189,7 +191,7 @@ namespace LambdaBiz.AWS
 					do
 					{
 						workflowWaitContext = await GetCurrentContext();
-						waitStatus = await GetStatus(Model.ActivityType.Task, timerName, timerName, workflowWaitContext);
+						waitStatus = GetStatus(Model.ActivityType.Task, timerName, timerName, workflowWaitContext);
 					}
 					while (waitStatus != Status.SUCCEEDED);
 
@@ -226,6 +228,8 @@ namespace LambdaBiz.AWS
 						Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
 					}
 				});
+
+                
 
 			}
 		}
@@ -327,6 +331,12 @@ namespace LambdaBiz.AWS
 				{
 					workflow = new Workflow();
 					workflow.ReferenceToken = taskToken;
+
+                    if(_store != null)
+                    {
+                        if (!await _store.StoreExistsAsync())
+                            await _store.CreateStoreAsync();
+                    }
 				}
 
 				foreach (HistoryEvent historyEvent in historyEvents)
@@ -336,63 +346,112 @@ namespace LambdaBiz.AWS
 						if (activityList == null)
 							activityList = new List<Activity>();
 
-						var activity = new Activity
-						{
-							Result = historyEvent.WorkflowExecutionSignaledEventAttributes.Input,
-							Status = Status.SUCCEEDED,
-							ActivityType = Model.ActivityType.Event,
-							Name = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
-							ScheduledId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
-							UniqueId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName
-						};
+                        var activity = FindActivity(Model.ActivityType.Event, historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName, activityList);
 
-						activityList.Add(activity);
+                        if (activity == null)
+                        {
+                            activity = new Activity
+                            {
+                                Result = historyEvent.WorkflowExecutionSignaledEventAttributes.Input,
+                                Status = Status.SUCCEEDED,
+                                ActivityType = Model.ActivityType.Event,
+                                Name = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
+                                ScheduledId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName,
+                                UniqueId = historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName
+                            };
+
+                            activityList.Add(activity);
+                        }
 					}
 					if(historyEvent.EventType == EventType.WorkflowExecutionStarted)
 					{
-						
-
-						workflow.Status = Status.STARTED;
-						workflow.OrchestrationId = 
-							historyEvent.WorkflowExecutionStartedEventAttributes.TaskList.Name.Replace(Constants.LAMBDA_BIZ_TASK_LIST, string.Empty);
+                        if (workflow.Status != Status.STARTED)
+                        {
+                            workflow.Status = Status.STARTED;
+                            workflow.OrchestrationId =
+                                historyEvent.WorkflowExecutionStartedEventAttributes.TaskList.Name.Replace(Constants.LAMBDA_BIZ_TASK_LIST, string.Empty);
+                            workflow.StartedDateTime = DateTime.Now;
+                        }
 
 					}
-					if (historyEvent.EventType == EventType.LambdaFunctionScheduled)
+                    if(historyEvent.EventType == EventType.WorkflowExecutionFailed)
+                    {
+                        if (workflow.Status != Status.FAILED)
+                        {
+                            workflow.Status = Status.FAILED;
+                            workflow.FailedDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.WorkflowExecutionCompleted)
+                    {
+                        if(workflow.Status != Status.SUCCEEDED)
+                        { 
+                            workflow.Status = Status.SUCCEEDED;
+                            workflow.SucceededDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.LambdaFunctionScheduled)
 					{
 						if (activityList == null)
 							activityList = new List<Activity>();
-						
 
-						var activity = new Activity
-						{
-							ActivityType = Model.ActivityType.Task,
-							Name = historyEvent.LambdaFunctionScheduledEventAttributes.Name,
-							ScheduledId = historyEvent.LambdaFunctionScheduledEventAttributes.Id,
-							UniqueId = historyEvent.LambdaFunctionScheduledEventAttributes.Control,
-							Status = Status.STARTED,
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionScheduledEventAttributes.Id.ToString(), activityList);
 
-						};
+                        if (activity == null)
+                        {
+                            activity = new Activity
+                            {
+                                ActivityType = Model.ActivityType.Task,
+                                Name = historyEvent.LambdaFunctionScheduledEventAttributes.Name,
+                                ScheduledId = historyEvent.LambdaFunctionScheduledEventAttributes.Id,
+                                UniqueId = historyEvent.LambdaFunctionScheduledEventAttributes.Control,
+                                Status = Status.SCHEDULED,
+                                ScheduledDateTime = DateTime.Now
 
-						activityList.Add(activity);
+                            };
+
+                            activityList.Add(activity);
+                        }
 
 					}
-					if (historyEvent.EventType == EventType.LambdaFunctionCompleted)
+                    if(historyEvent.EventType == EventType.LambdaFunctionStarted)
+                    {
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionStartedEventAttributes.ScheduledEventId.ToString(), activityList);
+
+                        if (activity.Status != Status.STARTED)
+                        {
+                            activity.Status = Status.STARTED;
+                            activity.StartedDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.LambdaFunctionCompleted)
 					{
 						var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionCompletedEventAttributes.ScheduledEventId.ToString(), activityList);
 						activity.Result = historyEvent.LambdaFunctionCompletedEventAttributes.Result;
-						activity.Status = Status.SUCCEEDED;
+                        if (activity.Status != Status.SUCCEEDED)
+                        {
+                            activity.Status = Status.SUCCEEDED;
+                            activity.SucceededDateTime = DateTime.Now;
+                        }
 					}
 					if (historyEvent.EventType == EventType.LambdaFunctionFailed)
 					{
 						var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionFailedEventAttributes.ScheduledEventId.ToString(), activityList);
 						activity.Result = historyEvent.LambdaFunctionFailedEventAttributes.Details;
-						activity.Status = Status.FAILED;
+                        if (activity.Status != Status.FAILED)
+                        {
+                            activity.Status = Status.FAILED;
+                            activity.FailedDateTime = DateTime.Now;
+                        }
 					}
 					if (historyEvent.EventType == EventType.LambdaFunctionTimedOut)
 					{
 						var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionTimedOutEventAttributes.ScheduledEventId.ToString(), activityList);
-
-						activity.Status = Status.TIMEOUT;
+                        if (activity.Status != Status.TIMEOUT)
+                        {
+                            activity.Status = Status.TIMEOUT;
+                            activity.TmedOutDateTime = DateTime.Now;
+                        }
 					}
 
 					if (historyEvent.EventType == EventType.TimerStarted)
@@ -406,8 +465,9 @@ namespace LambdaBiz.AWS
 							Name = historyEvent.TimerStartedEventAttributes.TimerId,
 							ScheduledId = historyEvent.TimerStartedEventAttributes.TimerId,
 							UniqueId = historyEvent.TimerStartedEventAttributes.TimerId,
-							Status = Status.STARTED
-						};
+							Status = Status.STARTED,
+                            StartedDateTime = DateTime.Now
+                        };
 
 						activityList.Add(activity);
 						
@@ -415,39 +475,88 @@ namespace LambdaBiz.AWS
 					if (historyEvent.EventType == EventType.TimerFired)
 					{
 						var activity = FindActivity(Model.ActivityType.Task, historyEvent.TimerFiredEventAttributes.TimerId, activityList);
+                        if (activity.Status != Status.SUCCEEDED)
+                        {
+                            activity.Status = Status.SUCCEEDED;
+                            activity.SucceededDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.ActivityTaskScheduled)
+                    {
+                        if (activityList == null)
+                        {
+                            activityList = new List<Activity>();
+                        }
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskScheduledEventAttributes.ActivityId, activityList);
+                        if(activity == null)
+                        { 
+                            activity = new Activity
+                            {
+                                ActivityType = Model.ActivityType.Task,
+                                Name = historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Name,
+                                ScheduledId = historyEvent.ActivityTaskScheduledEventAttributes.ActivityId,
+                                UniqueId = historyEvent.ActivityTaskScheduledEventAttributes.Control,
+                                Status = Status.SCHEDULED,
+                                ScheduledDateTime = DateTime.Now
 
-						activity.Status = Status.SUCCEEDED;
-					}
-					if (historyEvent.EventType == EventType.ActivityTaskScheduled)
-					{
-						if (activityList == null)
-						{
-							activityList = new List<Activity>();
-							var activity = new Activity
-							{
-								ActivityType = Model.ActivityType.Task,
-								Name = historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Name,
-								ScheduledId = historyEvent.ActivityTaskScheduledEventAttributes.ActivityId,
-								UniqueId = historyEvent.ActivityTaskScheduledEventAttributes.Control,
-								Status = Status.STARTED,
-								
-							};
+                            };
 
-							activityList.Add(activity);
-						}						
-					}
-					if (historyEvent.EventType == EventType.ActivityTaskCompleted)
-					{
-						var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskCompletedEventAttributes.ScheduledEventId.ToString(), activityList);
+                            activityList.Add(activity);
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.ActivityTaskStarted)
+                    {
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskStartedEventAttributes.ScheduledEventId.ToString(), activityList);
+                        if (activity.Status != Status.STARTED)
+                        {
+                            activity.Status = Status.STARTED;
+                            activity.StartedDateTime = DateTime.Now;
+                        }
+                    }
+                   
+                    if (historyEvent.EventType == EventType.ActivityTaskFailed)
+                    {
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskFailedEventAttributes.ScheduledEventId.ToString(), activityList);
+                        activity.Result = historyEvent.ActivityTaskFailedEventAttributes.Details;
+                        if (activity.Status != Status.FAILED)
+                        {
+                            activity.Status = Status.FAILED;
+                            activity.FailedDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.ActivityTaskCompleted)
+                    {
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskCompletedEventAttributes.ScheduledEventId.ToString(), activityList);
+                        activity.Result = historyEvent.ActivityTaskCompletedEventAttributes.Result;
+                        if (activity.Status != Status.SUCCEEDED)
+                        {
+                            activity.Status = Status.SUCCEEDED;
+                            activity.SucceededDateTime = DateTime.Now;
+                        }
+                    }
+                    if (historyEvent.EventType == EventType.ActivityTaskTimedOut)
+                    {
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskTimedOutEventAttributes.ScheduledEventId.ToString(), activityList);
+                        if (activity.Status != Status.TIMEOUT)
+                        {
+                            activity.Status = Status.TIMEOUT;
+                            activity.TmedOutDateTime = DateTime.Now;
+                        }
+                    }
 
-						activity.Status = Status.SUCCEEDED;
-					}
-				}
-			}
-			workflow.Activities = activityList;
+                }
+                workflow.Activities = activityList;
+                Task loggingTask =_store.LogStateAsync(workflow);
+            }
+			
 			return workflow;
 		}
 
-		#endregion
-	}
+        public async Task<Workflow> GetCurrentState()
+        {
+            return await _store.GetCurrentStateAsync(this._orchestrationId);
+        }
+
+        #endregion
+    }
 }

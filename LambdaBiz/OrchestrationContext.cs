@@ -9,7 +9,7 @@ namespace LambdaBiz
     public abstract class OrchestrationContext
     {
         protected abstract Task<Workflow> GetCurrentContext();
-        protected async Task<Status> GetStatus(ActivityType activityType, string name,string uniqueId, Workflow workflow)
+        protected Status GetStatus(ActivityType activityType, string name,string uniqueId, Workflow workflow)
         {
             Status status = Status.NONE;
 

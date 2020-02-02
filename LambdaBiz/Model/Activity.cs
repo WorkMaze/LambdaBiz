@@ -13,5 +13,10 @@ namespace LambdaBiz.Model
 		public string ScheduledId { get; set; }
 		public string FailureDetails { get; set; }
 		public string Result { get; set; }
+        public DateTime StartedDateTime { get; set; }
+        public DateTime ScheduledDateTime { get; set; }
+        public DateTime SucceededDateTime { get; set; }
+        public DateTime FailedDateTime { get; set; }
+        public DateTime TmedOutDateTime { get; set; }
     }
 }

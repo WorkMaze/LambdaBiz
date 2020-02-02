@@ -10,5 +10,9 @@ namespace LambdaBiz.Model
 		public Status Status { get; set; }
 		public string OrchestrationId { get; set; }
 		public string ReferenceToken { get; set; }
+        public DateTime ScheduledDateTime { get; set; }
+        public DateTime StartedDateTime { get; set; }
+        public DateTime SucceededDateTime { get; set; }
+        public DateTime FailedDateTime { get; set; }
 	}
 }

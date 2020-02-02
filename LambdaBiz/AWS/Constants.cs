@@ -11,5 +11,8 @@ namespace LambdaBiz.AWS
 		public const string LAMBDA_BIZ_TASK_LIST = "LambdaBizTaskList";
 		public const string LAMBDA_BIZ_ACTIVITY_TYPE = "LambdaBizActivityType";
 		public const string LAMBDA_BIZ_TYPE_VERSION = "1.0.0";
-	}
+        public const string LAMBDA_BIZ_DYNAMODB_TABLE = "LambdaBiz";
+        public const string LAMBDA_BIZ_ORCHESTRATION_ID = "OrchestrationId";
+        public const string LAMBDA_BIZ_WF_ATTRIBUTES = "WorkflowAttributes";
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.DynamoDBv2;
 using Amazon.SimpleWorkflow;
 using Amazon.SimpleWorkflow.Model;
 using System;
@@ -11,10 +12,14 @@ namespace LambdaBiz.AWS
 	public class AWSOrchestrationFactory : IOrchestrationFactory
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
-		public AWSOrchestrationFactory(string awsAccessKey, string awsSecretAccessKey, string awsRegion)
+        private AWSPeristantStore _store;
+        public AWSOrchestrationFactory(string awsAccessKey, string awsSecretAccessKey, string awsRegion, bool usePersistantStore)
 		{
 			_amazonSimpleWorkflowClient = new AmazonSimpleWorkflowClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
-		}
+           
+            if (usePersistantStore)
+                _store = new AWSPeristantStore(awsAccessKey, awsSecretAccessKey, awsRegion);
+        }
 		public async Task<IOrchestration> CreateOrchestrationAsync(string orchestrationId)
 		{
 			try
@@ -42,9 +47,9 @@ namespace LambdaBiz.AWS
 			catch (TypeAlreadyExistsException)
 			{
 
-			}
+			}           
 
-			return new AWSOrchestration(_amazonSimpleWorkflowClient, orchestrationId);
+			return new AWSOrchestration(_amazonSimpleWorkflowClient, orchestrationId, _store);
 		}
 				
 

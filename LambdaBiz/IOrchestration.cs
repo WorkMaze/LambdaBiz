@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LambdaBiz.Model;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,5 +17,6 @@ namespace LambdaBiz
 		Task StartWorkflowAsync(object input);
 		Task CompleteWorkflowAsync(object result);
 		Task FailWorkflowAsync(object error);
+        Task<Workflow> GetCurrentState();
     }
 }

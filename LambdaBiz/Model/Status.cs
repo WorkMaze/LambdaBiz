@@ -6,6 +6,6 @@ namespace LambdaBiz.Model
 {
     public enum Status
     {
-        STARTED, SUCCEEDED, FAILED, TIMEOUT, NONE
+        NONE,STARTED, SUCCEEDED, FAILED, TIMEOUT,  SCHEDULED
     }
 }
