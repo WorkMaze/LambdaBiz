@@ -47,7 +47,21 @@ namespace LambdaBiz.AWS
 			catch (TypeAlreadyExistsException)
 			{
 
-			}           
+			}
+
+			try
+			{
+				await _amazonSimpleWorkflowClient.RegisterActivityTypeAsync(new RegisterActivityTypeRequest
+				{
+					Domain = Constants.LAMBDA_BIZ_DOMAIN,
+					Name = Constants.LAMBDA_BIZ_ACTIVITY_TYPE,
+					Version = Constants.LAMBDA_BIZ_TYPE_VERSION
+				});
+			}
+			catch (TypeAlreadyExistsException)
+			{
+
+			}
 
 			return new AWSOrchestration(_amazonSimpleWorkflowClient, orchestrationId, _store);
 		}
