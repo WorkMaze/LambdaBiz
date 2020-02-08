@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace LambdaBiz.AWS
 {
-	public class LambdaContext : IServerlessContext
+	public class LambdaContext 
 	{
 		private AmazonLambdaClient _lambdaClient;
 		public LambdaContext(string awsAccessKey,string awsSecretAccessKey, string awsRegion)
@@ -20,7 +20,7 @@ namespace LambdaBiz.AWS
 			_lambdaClient = new AmazonLambdaClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
 		}
 
-		public async Task<T> CallTaskAsync<T>(string functionName, object input)
+		private async Task<T> CallTaskAsync<T>(string functionName, object input)
 		{
 			var lambdaResponse = await CallLambdaAsync(functionName, input);
 
@@ -31,7 +31,7 @@ namespace LambdaBiz.AWS
 			return serializer.Deserialize<T>(jsonreader);
 		}
 
-		public async Task<object> CallTaskAsync(string functionName, object input)
+		private async Task<object> CallTaskAsync(string functionName, object input)
 		{
 			var lambdaResponse = await CallLambdaAsync(functionName, input);
 

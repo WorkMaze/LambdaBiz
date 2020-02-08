@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LambdaBiz.REST
 {
-	internal class RESTConnector
+	public class RESTConnector
 	{
 		public static async Task<string> SendAsync(RESTConfig config)
 		{

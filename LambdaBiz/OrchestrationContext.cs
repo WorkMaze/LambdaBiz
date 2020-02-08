@@ -41,7 +41,7 @@ namespace LambdaBiz
 			return retActivity;
 		}
 
-		public Activity FindActivity(ActivityType activityType, string uniqueId,string name,IEnumerable<Activity> activityList)
+		protected Activity FindActivity(ActivityType activityType, string uniqueId,string name,IEnumerable<Activity> activityList)
 		{
 			Activity retActivity = null;
 

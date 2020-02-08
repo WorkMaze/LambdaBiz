@@ -4,7 +4,7 @@ using System.Text;
 
 namespace LambdaBiz.REST
 {
-	internal class RESTConfig
+	public class RESTConfig
 	{
 		public string Url { get; set; }
 		public string Method { get; set; }

@@ -12,7 +12,7 @@ using LambdaBiz.REST;
 
 namespace LambdaBiz.AWS
 {
-	public class AWSOrchestration : OrchestrationContext, IOrchestration, IService
+	public class AWSOrchestration : OrchestrationContext, IOrchestration
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
 		private string _orchestrationId;
@@ -530,114 +530,131 @@ namespace LambdaBiz.AWS
 		}
 		#endregion
 
-		#region IService
-		public async Task<T> Get<T>(string url, string queryString, Dictionary<string, string> headers)
+		#region REST
+		public async Task<T> Get<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "get", queryString, null, headers);
+            var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Get(string url, string queryString, Dictionary<string, string> headers)
+		public async Task<object> Get(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "get", queryString, null, headers);
-			return JsonConvert.DeserializeObject(response);
+			var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
+            return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Delete<T>(string url, string queryString, Dictionary<string, string> headers)
+		public async Task<T> Delete<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "delete", queryString, null, headers);
+			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Delete(string url, string queryString, Dictionary<string, string> headers)
+		public async Task<object> Delete(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "delete", queryString, null, headers);
+			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Post<T>(string url, string queryString, object body, Dictionary<string, string> headers)
+		public async Task<T> Post<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "post", queryString, body, headers);
+			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Post(string url, string queryString, object body, Dictionary<string, string> headers)
+		public async Task<object> Post(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "post", queryString, body, headers);
+			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Put<T>(string url, string queryString, object body, Dictionary<string, string> headers)
+		public async Task<T> Put<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "put", queryString, body, headers);
+			var response = await CallServiceAsync(url, "put", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Put(string url, string queryString, object body, Dictionary<string, string> headers)
+		public async Task<object> Put(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
-			var response = await RESTConnector.SendAsync(url, "put", queryString, null, headers);
+			var response = await CallServiceAsync(url, "put", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
-		//private async Task<string> CallServiceAsync(string url, string method, string queryString, object input, Dictionary<string, string> header,string id)
-		//{
-		//	var result = string.Empty;
+        private async Task<string> CallServiceAsync(string url, string method, string queryString, object input, Dictionary<string, string> headers, string id)
+        {
+            var result = string.Empty;
 
-		//	var workflowContext = await GetCurrentContext();
+            var restConfig = new RESTConfig
+            {
+                Body = JsonConvert.SerializeObject(input),
+                Headers = headers,
+                Method = method,
+                QueryString = queryString,
+                Url = url
+            };
 
-		//	if (workflowContext != null && workflowContext.Status == Status.STARTED)
-		//	{
-		//		var status = GetStatus(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, workflowContext);
+            var workflowContext = await GetCurrentContext();
 
-		//		if (status == Status.NONE)
-		//		{
+            if (workflowContext != null && workflowContext.Status == Status.STARTED)
+            {
+                var status = GetStatus(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, workflowContext);
+
+                if (status == Status.NONE)
+                {
+                    var decisionRequest = new RespondDecisionTaskCompletedRequest
+                    {
+                        TaskToken = workflowContext.ReferenceToken,
+                        Decisions = new List<Decision>
+                        {
+                            new Decision
+                            {
+                                DecisionType = DecisionType.ScheduleActivityTask,
+                                ScheduleActivityTaskDecisionAttributes = new ScheduleActivityTaskDecisionAttributes
+                                {
+                                    Input = JsonConvert.SerializeObject(restConfig),
+                                    ActivityId = id,
+                                    Control = id,
+                                    ActivityType = new Amazon.SimpleWorkflow.Model.ActivityType
+                                    {
+                                        Name = Constants.LAMBDA_BIZ_ACTIVITY_TYPE,
+                                        Version = Constants.LAMBDA_BIZ_TYPE_VERSION
+                                    },
+                                    TaskList = new TaskList
+                                    {
+                                        Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+
+                    var waitStatus = Status.NONE;
+                    Workflow workflowWaitContext = null;
 
 
-		//			var decisionRequest = new RespondDecisionTaskCompletedRequest
-		//			{
-		//				TaskToken = workflowContext.ReferenceToken,
-		//				Decisions = new List<Decision>
-		//				{
-		//					new Decision
-		//					{
-		//						DecisionType = DecisionType.ScheduleActivityTask,
-		//						ScheduleActivityTaskDecisionAttributes = new ScheduleActivityTaskDecisionAttributes
-		//						{
-		//							Input = JsonConvert.SerializeObject(input),
-									
-		//						}
-		//					}
-		//				}
-		//			};
+                    do
+                    {
+                        workflowWaitContext = await GetCurrentContext();
+                        waitStatus = GetStatus(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, workflowWaitContext);
+                    }
+                    while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
-		//			await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                    var activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowWaitContext.Activities);
 
-		//			var waitStatus = Status.NONE;
-		//			Workflow workflowWaitContext = null;
+                    if (waitStatus == Status.FAILED)
+                        throw new Exception(activity.FailureDetails);
 
+                    if (waitStatus == Status.TIMEOUT)
+                        throw new Exception("Time-Out");
 
-		//			do
-		//			{
-		//				workflowWaitContext = await GetCurrentContext();
-		//				waitStatus = GetStatus(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, workflowWaitContext);
-		//			}
-		//			while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
+                    result = activity.Result;
+                }
+            }
 
-		//			var activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowWaitContext.Activities);
+            return result;
+        }
 
-		//			if (waitStatus == Status.FAILED)
-		//				throw new Exception(activity.FailureDetails);
-
-		//			if (waitStatus == Status.TIMEOUT)
-		//				throw new Exception("Time-Out");
-
-		//			result = activity.Result;
-		//		}
-		//	}
-
-		//	return result;
-		//}
-		
-		#endregion
-	}
+        #endregion
+    }
 }
