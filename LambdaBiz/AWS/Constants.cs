@@ -14,5 +14,7 @@ namespace LambdaBiz.AWS
         public const string LAMBDA_BIZ_DYNAMODB_TABLE = "LambdaBiz";
         public const string LAMBDA_BIZ_ORCHESTRATION_ID = "OrchestrationId";
         public const string LAMBDA_BIZ_WF_ATTRIBUTES = "WorkflowAttributes";
+        public const string LAMBDA_BIZ_RECORD_MARKER_NAME = "LambdaBizActivityRecordMarker";
+        public const string LAMBDA_BIZ_EVENT = "LambdaBizRunEvent";
     }
 }

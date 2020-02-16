@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,5 +15,16 @@ namespace LambdaBiz.Model
         public DateTime StartedDateTime { get; set; }
         public DateTime SucceededDateTime { get; set; }
         public DateTime FailedDateTime { get; set; }
-	}
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(new {
+                OrchestrationId,
+                Status,
+                ScheduledDateTime,
+                StartedDateTime,
+                SucceededDateTime,
+                FailedDateTime });
+        }
+    }
 }

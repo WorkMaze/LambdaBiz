@@ -20,14 +20,14 @@ namespace LambdaBiz
         Task<Workflow> GetCurrentState();
 
         #region REST
-        Task<T> Get<T>(string url, string queryString, Dictionary<string, string> headers, string id);
-        Task<object> Get(string url, string queryString, Dictionary<string, string> headers, string id);
-        Task<T> Delete<T>(string url, string queryString, Dictionary<string, string> headers, string id);
-        Task<object> Delete(string url, string queryString, Dictionary<string, string> headers, string id);
-        Task<T> Post<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id);
-        Task<object> Post(string url, string queryString, object body, Dictionary<string, string> headers, string id);
-        Task<T> Put<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id);
-        Task<object> Put(string url, string queryString, object body, Dictionary<string, string> headers, string id);
+        Task<T> CallGetAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id);
+        Task<object> CallGetAsync(string url, string queryString, Dictionary<string, string> headers, string id);
+        Task<T> CallDeleteAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id);
+        Task<object> CallDeleteAsync(string url, string queryString, Dictionary<string, string> headers, string id);
+        Task<T> CallPostAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id);
+        Task<object> CallPostAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id);
+        Task<T> CallPutAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id);
+        Task<object> CallPutAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id);
         #endregion
     }
 }

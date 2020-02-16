@@ -12,11 +12,12 @@ namespace LambdaBiz.AWS
 	public class AWSOrchestrationFactory : IOrchestrationFactory
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
+        private string _lambdaRole;
         private AWSPeristantStore _store;
-        public AWSOrchestrationFactory(string awsAccessKey, string awsSecretAccessKey, string awsRegion, bool usePersistantStore)
+        public AWSOrchestrationFactory(string awsAccessKey, string awsSecretAccessKey, string awsRegion, bool usePersistantStore,string lambdaRole)
 		{
 			_amazonSimpleWorkflowClient = new AmazonSimpleWorkflowClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
-           
+            _lambdaRole = lambdaRole;
             if (usePersistantStore)
                 _store = new AWSPeristantStore(awsAccessKey, awsSecretAccessKey, awsRegion);
         }
@@ -63,7 +64,7 @@ namespace LambdaBiz.AWS
 
 			}
 
-			return new AWSOrchestration(_amazonSimpleWorkflowClient, orchestrationId, _store);
+            return new AWSOrchestration(_amazonSimpleWorkflowClient, orchestrationId, _store, _lambdaRole);
 		}
 				
 

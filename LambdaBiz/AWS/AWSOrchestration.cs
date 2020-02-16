@@ -15,13 +15,15 @@ namespace LambdaBiz.AWS
 	public class AWSOrchestration : OrchestrationContext, IOrchestration
 	{
 		private AmazonSimpleWorkflowClient _amazonSimpleWorkflowClient;
-		private string _orchestrationId;
+        private string _lambdaRole;
+        private string _orchestrationId;
         private IPersistantStore _store;
-        internal AWSOrchestration(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient,string orchestrationId,IPersistantStore store)
+        internal AWSOrchestration(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient,string orchestrationId,IPersistantStore store,string lambdaRole)
 		{
 			_amazonSimpleWorkflowClient = amazonSimpleWorkflowClient;
 			_orchestrationId = orchestrationId;
             _store = store;
+            _lambdaRole = lambdaRole;
         }
 
 		#region Task
@@ -48,37 +50,47 @@ namespace LambdaBiz.AWS
 			{
 				var status = GetStatus(Model.ActivityType.Task, functionName, id, workflowContext);
 
-				if (status == Status.NONE)
-				{
-					var decisionRequest = new RespondDecisionTaskCompletedRequest
-					{
-						TaskToken = workflowContext.ReferenceToken,
-						Decisions = new List<Decision>
-						{
-							new Decision
-							{
-								DecisionType = DecisionType.ScheduleLambdaFunction,
-								ScheduleLambdaFunctionDecisionAttributes = new ScheduleLambdaFunctionDecisionAttributes
-								{
-									Input = JsonConvert.SerializeObject(input),
-									Name = functionName,
-									Id = id,
-									Control = id
-								}
-							}
-						}
-					};
+                if (status == Status.NONE)
+                {
+                    var decisionRequest = new RespondDecisionTaskCompletedRequest
+                    {
+                        TaskToken = workflowContext.ReferenceToken,
+                        Decisions = new List<Decision>
+                        {
+                            new Decision
+                            {
+                                DecisionType = DecisionType.ScheduleLambdaFunction,
+                                ScheduleLambdaFunctionDecisionAttributes = new ScheduleLambdaFunctionDecisionAttributes
+                                {
+                                    Input = JsonConvert.SerializeObject(input),
+                                    Name = functionName,
+                                    Id = id,
+                                    Control = id
+                                }
+                            }
+                        }
+                    };
 
-					await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                    await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                }
+                else
+                {
+                    await SetMarker(Model.ActivityType.Task, functionName, id, status, workflowContext.ReferenceToken);
+                    await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
+                    var activity = FindActivity(Model.ActivityType.Task, id, functionName, workflowContext.Activities);
+                    result = activity.Result;
+                }
 
+                if (status == Status.NONE || status == Status.SCHEDULED || status == Status.STARTED)
+                { 
 					var waitStatus = Status.NONE;
-					Workflow workflowWaitContext = null;
-
-
+                    Workflow workflowWaitContext = null;
 					do
 					{
 						workflowWaitContext = await GetCurrentContext();
 						waitStatus = GetStatus(Model.ActivityType.Task, functionName, id, workflowWaitContext);
+                        await SetMarker(Model.ActivityType.Task, functionName, id, waitStatus, workflowWaitContext.ReferenceToken);
+                        await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
 					}
 					while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
@@ -139,8 +151,14 @@ namespace LambdaBiz.AWS
 				do
 				{
 					workflowWaitContext = await GetCurrentContext();
-					waitStatus = GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
-				}
+
+                    if (workflowWaitContext != null)
+                    {
+                        waitStatus = GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
+                        await SetMarker(Model.ActivityType.Event, signalName, signalName, waitStatus, workflowWaitContext.ReferenceToken);
+                        await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
+                    }
+                }
 				while (waitStatus != Status.SUCCEEDED);
 
 				var activity = FindActivity(Model.ActivityType.Event, signalName, signalName, workflowWaitContext.Activities);
@@ -164,41 +182,47 @@ namespace LambdaBiz.AWS
 			{
 				var status = GetStatus(Model.ActivityType.Task, timerName, timerName, workflowContext);
 
-				if (status == Status.NONE)
-				{
-					var decisionRequest = new RespondDecisionTaskCompletedRequest
-					{
-						TaskToken = workflowContext.ReferenceToken,
-						Decisions = new List<Decision>
-						{
-							new Decision
-							{
-								DecisionType = DecisionType.StartTimer,
-								StartTimerDecisionAttributes = new StartTimerDecisionAttributes
-								{
-									TimerId = timerName,
-									StartToFireTimeout = timeSpan.TotalSeconds.ToString()
-								}
-							}
-						}
-					};
+                if (status == Status.NONE)
+                {
+                    var decisionRequest = new RespondDecisionTaskCompletedRequest
+                    {
+                        TaskToken = workflowContext.ReferenceToken,
+                        Decisions = new List<Decision>
+                        {
+                            new Decision
+                            {
+                                DecisionType = DecisionType.StartTimer,
+                                StartTimerDecisionAttributes = new StartTimerDecisionAttributes
+                                {
+                                    TimerId = timerName,
+                                    StartToFireTimeout = timeSpan.TotalSeconds.ToString()
+                                }
+                            }
+                        }
+                    };
 
-					await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                    await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                }
+                else
+                {
+                    await SetMarker(Model.ActivityType.Task, timerName, timerName, status, workflowContext.ReferenceToken);
+                    await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
+                }
 
-					var waitStatus = Status.NONE;
-					Workflow workflowWaitContext = null;
+                if (status == Status.NONE || status == Status.SCHEDULED || status == Status.STARTED)
+                {
+                    var waitStatus = Status.NONE;
+				    Workflow workflowWaitContext = null;
 
+				    do
+				    {
+					    workflowWaitContext = await GetCurrentContext();
+					    waitStatus = GetStatus(Model.ActivityType.Timer, timerName, timerName, workflowWaitContext);
+                        await SetMarker(Model.ActivityType.Timer, timerName, timerName, waitStatus, workflowWaitContext.ReferenceToken);
+                        await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
+                    }
+				    while (waitStatus != Status.SUCCEEDED);
 
-					do
-					{
-						workflowWaitContext = await GetCurrentContext();
-						waitStatus = GetStatus(Model.ActivityType.Task, timerName, timerName, workflowWaitContext);
-					}
-					while (waitStatus != Status.SUCCEEDED);
-
-					var activity = FindActivity(Model.ActivityType.Task, timerName, timerName, workflowWaitContext.Activities);
-
-					
 				}
 			}
 
@@ -210,29 +234,37 @@ namespace LambdaBiz.AWS
 
 		public async Task StartWorkflowAsync(object input)
 		{
-			var workflowContext = GetCurrentContext();
-
-			if (workflowContext == null)
-			{
-				await _amazonSimpleWorkflowClient.StartWorkflowExecutionAsync(new StartWorkflowExecutionRequest
-				{
-					WorkflowId = _orchestrationId,
-					Domain = Constants.LAMBDA_BIZ_DOMAIN,
-					WorkflowType = new WorkflowType
-					{
-						Name = Constants.LAMBDA_BIZ_WORKFLOW_TYPE,
-						Version = Constants.LAMBDA_BIZ_TYPE_VERSION
-					},
-					Input = JsonConvert.SerializeObject(input),
-					TaskList = new TaskList
-					{
-						Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
-					}
-				});
-
+            
+            try
+            {
+                await _amazonSimpleWorkflowClient.StartWorkflowExecutionAsync(new StartWorkflowExecutionRequest
+                {
+                    WorkflowId = _orchestrationId,
+                    Domain = Constants.LAMBDA_BIZ_DOMAIN,
+                    WorkflowType = new WorkflowType
+                    {
+                        Name = Constants.LAMBDA_BIZ_WORKFLOW_TYPE,
+                        Version = Constants.LAMBDA_BIZ_TYPE_VERSION
+                    },
+                    Input = JsonConvert.SerializeObject(input),
+                    TaskList = new TaskList
+                    {
+                        Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
+                    },
+                    ExecutionStartToCloseTimeout = "31536000",
+                    TaskStartToCloseTimeout = "NONE",
+                    ChildPolicy = ChildPolicy.TERMINATE,
+                    LambdaRole =_lambdaRole 
+                }) ;
                 
-
-			}
+            }
+            catch(WorkflowExecutionAlreadyStartedException)
+            {
+                
+            }
+            
+           
+			
 		}
 
 		public async Task CompleteWorkflowAsync(object result)
@@ -291,10 +323,31 @@ namespace LambdaBiz.AWS
 
 		#region Polling
 
-		protected override async Task<Workflow> GetCurrentContext()
+        private async Task SetMarker(Model.ActivityType activityType,string name, string id,Status status,string referenceToken)
+        {
+            var decisionRequest = new RespondDecisionTaskCompletedRequest
+            {
+                TaskToken = referenceToken,
+                Decisions = new List<Decision>
+                        {
+                            new Decision
+                            {
+                                DecisionType = DecisionType.RecordMarker,
+                                RecordMarkerDecisionAttributes = new RecordMarkerDecisionAttributes
+                                {
+                                    MarkerName = Constants.LAMBDA_BIZ_RECORD_MARKER_NAME + "_" + name +"_" + id,
+                                    Details = activityType.ToString()+ "_" + status.ToString()
+                                }
+                            }
+                        }
+            };
+
+            await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+        }
+		protected override async Task<Workflow>  GetCurrentContext()
 		{
 			Workflow workflow = null;
-			IList<Activity> activityList = null;
+			IList<Activity> activityList = new List<Activity>();
 		    PollForDecisionTaskResponse decisionTaskResponse = null;
 			List<HistoryEvent> historyEvents = new List<HistoryEvent>();
 			string taskToken = null;
@@ -344,9 +397,7 @@ namespace LambdaBiz.AWS
 				{
 					if (historyEvent.EventType == EventType.WorkflowExecutionSignaled)
 					{
-						if (activityList == null)
-							activityList = new List<Activity>();
-
+						
                         var activity = FindActivity(Model.ActivityType.Event, historyEvent.WorkflowExecutionSignaledEventAttributes.SignalName, activityList);
 
                         if (activity == null)
@@ -386,9 +437,7 @@ namespace LambdaBiz.AWS
                     }
                     if (historyEvent.EventType == EventType.LambdaFunctionScheduled)
 					{
-						if (activityList == null)
-							activityList = new List<Activity>();
-
+						
                         var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionScheduledEventAttributes.Id.ToString(), activityList);
 
                         if (activity == null)
@@ -397,7 +446,7 @@ namespace LambdaBiz.AWS
                             {
                                 ActivityType = Model.ActivityType.Task,
                                 Name = historyEvent.LambdaFunctionScheduledEventAttributes.Name,
-                                ScheduledId = historyEvent.LambdaFunctionScheduledEventAttributes.Id,
+                                ScheduledId = historyEvent.EventId.ToString(),
                                 UniqueId = historyEvent.LambdaFunctionScheduledEventAttributes.Control,
                                 Status = Status.SCHEDULED,
                                 ScheduledDateTime = historyEvent.EventTimestamp
@@ -408,6 +457,15 @@ namespace LambdaBiz.AWS
                         }
 
 					}
+                    if(historyEvent.EventType == EventType.StartLambdaFunctionFailed)
+                    {
+
+                        var activity = FindActivity(Model.ActivityType.Task, historyEvent.StartLambdaFunctionFailedEventAttributes.ScheduledEventId.ToString(), activityList);
+                        activity.Result = historyEvent.StartLambdaFunctionFailedEventAttributes.Message;
+                        activity.FailureDetails = historyEvent.StartLambdaFunctionFailedEventAttributes.Cause;
+                        activity.Status = Status.FAILED;
+                        activity.FailedDateTime = historyEvent.EventTimestamp;
+                    }
                     if(historyEvent.EventType == EventType.LambdaFunctionStarted)
                     {
                         var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionStartedEventAttributes.ScheduledEventId.ToString(), activityList);
@@ -427,6 +485,7 @@ namespace LambdaBiz.AWS
 					{
 						var activity = FindActivity(Model.ActivityType.Task, historyEvent.LambdaFunctionFailedEventAttributes.ScheduledEventId.ToString(), activityList);
 						activity.Result = historyEvent.LambdaFunctionFailedEventAttributes.Details;
+                        activity.FailureDetails = historyEvent.LambdaFunctionFailedEventAttributes.Reason;
                         activity.Status = Status.FAILED;
                         activity.FailedDateTime = historyEvent.EventTimestamp;
                     }
@@ -439,14 +498,12 @@ namespace LambdaBiz.AWS
 
 					if (historyEvent.EventType == EventType.TimerStarted)
 					{
-						if (activityList == null)
-							activityList = new List<Activity>();
-
+						
 						var activity = new Activity
 						{
 							ActivityType = Model.ActivityType.Timer,
 							Name = historyEvent.TimerStartedEventAttributes.TimerId,
-							ScheduledId = historyEvent.TimerStartedEventAttributes.TimerId,
+							ScheduledId = historyEvent.EventId.ToString(),
 							UniqueId = historyEvent.TimerStartedEventAttributes.TimerId,
 							Status = Status.STARTED,
                             StartedDateTime = historyEvent.EventTimestamp
@@ -457,16 +514,13 @@ namespace LambdaBiz.AWS
 					}
 					if (historyEvent.EventType == EventType.TimerFired)
 					{
-						var activity = FindActivity(Model.ActivityType.Task, historyEvent.TimerFiredEventAttributes.TimerId, activityList);
+						var activity = FindActivity(Model.ActivityType.Timer, historyEvent.TimerFiredEventAttributes.StartedEventId.ToString(), activityList);
                         activity.Status = Status.SUCCEEDED;
                         activity.SucceededDateTime = historyEvent.EventTimestamp;
                     }
                     if (historyEvent.EventType == EventType.ActivityTaskScheduled)
                     {
-                        if (activityList == null)
-                        {
-                            activityList = new List<Activity>();
-                        }
+                       
                         var activity = FindActivity(Model.ActivityType.Task, historyEvent.ActivityTaskScheduledEventAttributes.ActivityId, activityList);
                         if(activity == null)
                         { 
@@ -474,7 +528,7 @@ namespace LambdaBiz.AWS
                             {
                                 ActivityType = Model.ActivityType.Task,
                                 Name = historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Name,
-                                ScheduledId = historyEvent.ActivityTaskScheduledEventAttributes.ActivityId,
+                                ScheduledId = historyEvent.EventId.ToString(),
                                 UniqueId = historyEvent.ActivityTaskScheduledEventAttributes.Control,
                                 Status = Status.SCHEDULED,
                                 ScheduledDateTime = historyEvent.EventTimestamp
@@ -531,49 +585,49 @@ namespace LambdaBiz.AWS
 		#endregion
 
 		#region REST
-		public async Task<T> Get<T>(string url, string queryString, Dictionary<string, string> headers, string id)
+		public async Task<T> CallGetAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
             var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Get(string url, string queryString, Dictionary<string, string> headers, string id)
+		public async Task<object> CallGetAsync(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
             return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Delete<T>(string url, string queryString, Dictionary<string, string> headers, string id)
+		public async Task<T> CallDeleteAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Delete(string url, string queryString, Dictionary<string, string> headers, string id)
+		public async Task<object> CallDeleteAsync(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Post<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
+		public async Task<T> CallPostAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Post(string url, string queryString, object body, Dictionary<string, string> headers, string id)
+		public async Task<object> CallPostAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
-		public async Task<T> Put<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
+		public async Task<T> CallPutAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "put", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> Put(string url, string queryString, object body, Dictionary<string, string> headers, string id)
+		public async Task<object> CallPutAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "put", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);
@@ -628,7 +682,17 @@ namespace LambdaBiz.AWS
                     };
 
                     await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                }
+                else
+                {
+                    await SetMarker(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, status, workflowContext.ReferenceToken);
+                    await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
+                    var activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowContext.Activities);
+                    result = activity.Result;
+                }
 
+                if (status == Status.NONE || status == Status.SCHEDULED || status == Status.STARTED)
+                {
                     var waitStatus = Status.NONE;
                     Workflow workflowWaitContext = null;
 
@@ -637,6 +701,8 @@ namespace LambdaBiz.AWS
                     {
                         workflowWaitContext = await GetCurrentContext();
                         waitStatus = GetStatus(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, workflowWaitContext);
+                        await SetMarker(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, waitStatus, workflowWaitContext.ReferenceToken);
+                        await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
                     }
                     while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
@@ -648,7 +714,7 @@ namespace LambdaBiz.AWS
                     if (waitStatus == Status.TIMEOUT)
                         throw new Exception("Time-Out");
 
-                    result = activity.Result;
+                    result = activity.Result; 
                 }
             }
 

@@ -32,8 +32,19 @@ namespace LambdaBiz.AWS
             var getItemResponse = await _amazonDynamoDbClient.GetItemAsync(getItemRequest);
 
             var attributes = getItemResponse.Item[Constants.LAMBDA_BIZ_WF_ATTRIBUTES];
+            var workflow = JsonConvert.DeserializeObject<Workflow>(attributes.S);
+            workflow.Activities = new List<Activity>();
 
-            return JsonConvert.DeserializeObject<Workflow>( attributes.S);
+            foreach (var attribute in getItemResponse.Item)
+            {
+                if(attribute.Key != Constants.LAMBDA_BIZ_WF_ATTRIBUTES
+                    && attribute.Key != Constants.LAMBDA_BIZ_ORCHESTRATION_ID)
+                {
+                    (workflow.Activities as IList<Activity>).Add(JsonConvert.DeserializeObject<Activity>(attribute.Value.S));
+                }
+            }
+
+            return workflow;
         }
 
         public async Task CreateStoreAsync()
@@ -48,6 +59,15 @@ namespace LambdaBiz.AWS
                         KeyType = KeyType.HASH                        
                     }
                 },
+                AttributeDefinitions = new List<AttributeDefinition>()
+                {
+                    new AttributeDefinition
+                    {
+                        AttributeName = Constants.LAMBDA_BIZ_ORCHESTRATION_ID,
+                        AttributeType = ScalarAttributeType.S
+                    }
+                },
+                BillingMode= BillingMode.PAY_PER_REQUEST,
                 TableName = Constants.LAMBDA_BIZ_DYNAMODB_TABLE
             });
         }
@@ -61,12 +81,28 @@ namespace LambdaBiz.AWS
             {
                 S = workflow.OrchestrationId
             });
+
+
+            foreach (var activity in workflow.Activities)
+            {
+                if (activity.Name != Constants.LAMBDA_BIZ_EVENT)
+                {
+                    putItemRequest.Item.Add(activity.UniqueId, new AttributeValue
+                    {
+                        S = JsonConvert.SerializeObject(activity)
+                    });
+
+                    
+                }
+
+            }
+
             putItemRequest.Item.Add(Constants.LAMBDA_BIZ_WF_ATTRIBUTES, new AttributeValue
             {
-                S = JsonConvert.SerializeObject(workflow)
+                S = workflow.ToString()
             });
 
-            putItemRequest.TableName = Constants.LAMBDA_BIZ_DYNAMODB_TABLE;            
+            putItemRequest.TableName = Constants.LAMBDA_BIZ_DYNAMODB_TABLE;
 
             await _amazonDynamoDbClient.PutItemAsync(putItemRequest);
         }
