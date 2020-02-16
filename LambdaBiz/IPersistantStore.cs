@@ -12,6 +12,7 @@ namespace LambdaBiz
         Task CreateStoreAsync();
         Task LogStateAsync(Workflow workflow);
         Task<Workflow> GetCurrentStateAsync(string orchestrationId);
+        Task SetStatus(string orchestrationId, Status status);
         
     }
 }

@@ -143,29 +143,26 @@ namespace LambdaBiz.AWS
 		{
 			var result = string.Empty;
 
-			var workflowContext = await GetCurrentContext();
 			Status waitStatus = Status.STARTED;
 			Workflow workflowWaitContext = null;
-			if (workflowContext != null && workflowContext.Status == Status.STARTED)
+			
+			do
 			{
-				do
-				{
-					workflowWaitContext = await GetCurrentContext();
+				workflowWaitContext = await GetCurrentContext();
 
-                    if (workflowWaitContext != null)
-                    {
-                        waitStatus = GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
-                        await SetMarker(Model.ActivityType.Event, signalName, signalName, waitStatus, workflowWaitContext.ReferenceToken);
-                        await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
-                    }
+                if (workflowWaitContext != null)
+                {
+                    waitStatus = GetStatus(Model.ActivityType.Event, signalName, signalName, workflowWaitContext);
+                    await SetMarker(Model.ActivityType.Event, signalName, signalName, waitStatus, workflowWaitContext.ReferenceToken);
+                    await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
                 }
-				while (waitStatus != Status.SUCCEEDED);
+            }
+			while (waitStatus != Status.SUCCEEDED && workflowWaitContext != null && workflowWaitContext.Status == Status.STARTED);
 
-				var activity = FindActivity(Model.ActivityType.Event, signalName, signalName, workflowWaitContext.Activities);
+			var activity = FindActivity(Model.ActivityType.Event, signalName, signalName, workflowWaitContext.Activities);
 
-				result = activity.Result;
-				
-			}
+			result = activity.Result;		
+			
 
 			return result;
 		}
@@ -290,6 +287,7 @@ namespace LambdaBiz.AWS
 				};
 
 				await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
+                await _store.SetStatus(_orchestrationId, Status.SUCCEEDED);
 			}
 		}
 
@@ -316,7 +314,8 @@ namespace LambdaBiz.AWS
 				};
 
 				await _amazonSimpleWorkflowClient.RespondDecisionTaskCompletedAsync(decisionRequest);
-			}
+                await _store.SetStatus(_orchestrationId, Status.FAILED);
+            }
 		}
 
 		#endregion

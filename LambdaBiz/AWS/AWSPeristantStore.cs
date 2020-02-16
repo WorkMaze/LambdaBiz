@@ -18,7 +18,13 @@ namespace LambdaBiz.AWS
             _amazonDynamoDbClient = new AmazonDynamoDBClient(awsAccessKey, awsSecretAccessKey, RegionEndpoint.GetBySystemName(awsRegion));
 
         }
- 
+
+        public async Task SetStatus(string orchestrationId, Status status)
+        {
+            var workflow = await GetCurrentStateAsync(orchestrationId);
+            workflow.Status = status;
+            await LogStateAsync(workflow);
+        }
         public async Task<Workflow> GetCurrentStateAsync(string orchestrationId)
         {
             var getItemRequest = new GetItemRequest();
@@ -90,11 +96,8 @@ namespace LambdaBiz.AWS
                     putItemRequest.Item.Add(activity.UniqueId, new AttributeValue
                     {
                         S = JsonConvert.SerializeObject(activity)
-                    });
-
-                    
+                    });                    
                 }
-
             }
 
             putItemRequest.Item.Add(Constants.LAMBDA_BIZ_WF_ATTRIBUTES, new AttributeValue
