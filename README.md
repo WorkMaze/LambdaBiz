@@ -9,7 +9,7 @@ The purpose of this project is to enable existing C# users of AWS to write long 
 The framework relies upon the AWS SWF (Simple Workflow Framework) to maintain the durability of the orchestration. If a sequence of tasks has been executed and the sequence times out and is called again, the framework will not call the already executed tasks in the sequence and the orchestration will continue from the point where it was left during the last run.
 
 ## Orcestrating lambda tasks
-
+```C#
             /// Initialize orchestration factory for AWS
             var orchestrationFactory = new AWSOrchestrationFactory(awsAccessKeyID, awsSecretAccessKey, awsRegion, true,awsLambdaRole);
 
@@ -40,3 +40,4 @@ The framework relies upon the AWS SWF (Simple Workflow Framework) to maintain th
                 /// Fail workflow
                 await orchestration.FailWorkflowAsync(ex);
             }
+```
