@@ -28,6 +28,12 @@ namespace LambdaBiz.Examples
             public int Number2 { get; set; }
             public double Result { get; set; }
         }
+        internal class DummyResponse
+        {
+            public string status { get; set; }
+            public string message { get; set; }
+
+        }
         static void Main(string[] args)
         {
             var contents = File.ReadAllText("D://Work//AWSWorkflowProvider.json");
@@ -36,8 +42,7 @@ namespace LambdaBiz.Examples
             try
             {
                 Parallel.Invoke(() => Sequence(aws).Wait(),()=> RestSequence(aws).Wait(), () => RunService(aws).Wait());
-
-                
+                            
             }
             catch(Exception ex)
             {
@@ -46,6 +51,11 @@ namespace LambdaBiz.Examples
 
         }
 
+        /// <summary>
+        /// Running an AWS REST Service background process
+        /// </summary>
+        /// <param name="aws"></param>
+        /// <returns></returns>
         static async Task RunService(AWS aws)
         {
             while (true)
@@ -55,6 +65,11 @@ namespace LambdaBiz.Examples
             }
         }
 
+        /// <summary>
+        /// Orchestration using AWS Lambda functions
+        /// </summary>
+        /// <param name="aws"></param>
+        /// <returns></returns>
         static async Task Sequence(AWS aws)
         {
             var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true,aws.LambdaRole);
@@ -89,12 +104,12 @@ namespace LambdaBiz.Examples
             
         }
 
-        internal class DummyResponse
-        {
-            public string status { get; set; }
-            public string message { get; set; }
 
-        }
+        /// <summary>
+        /// Orchestration using REST services, this orchestration signals the above orchestration which waits for an external signal.
+        /// </summary>
+        /// <param name="aws"></param>
+        /// <returns></returns>
         static async Task RestSequence(AWS aws)
         {
             var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true, aws.LambdaRole);
