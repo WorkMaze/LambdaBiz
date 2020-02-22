@@ -71,4 +71,11 @@ var b = await orchestration.CallPostAsync<DummyResponse>(url + "create",null, nu
 var c = await orchestration.CallPutAsync<DummyResponse>(url + "update/21", null, null, null, "ServiceOperation3");
 var d = await orchestration.CallDeleteAsync<DummyResponse>(url + "delete/21", null, null, "ServiceOperation4");
 ```
-
+**Create an AWS background process to run external services
+```C#
+while (true)
+{
+            var orch = new AWSRESTService(awsAccessKeyID, awsSecretAccessKey, awsRegion);
+            await orch.Run("RESTSequence1");
+}
+```
