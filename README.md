@@ -11,7 +11,7 @@ The framework relies upon the AWS SWF (Simple Workflow Framework) to maintain th
 ## Orcestrating lambda tasks
 
             /// Initialize orchestration factory for AWS
-            var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true,aws.LambdaRole);
+            var orchestrationFactory = new AWSOrchestrationFactory(awsAccessKeyID, awsSecretAccessKey, awsRegion, true,awsLambdaRole);
 
             /// Create a new orchestration
             var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence3");
