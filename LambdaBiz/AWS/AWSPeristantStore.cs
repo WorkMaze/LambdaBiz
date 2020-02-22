@@ -23,6 +23,13 @@ namespace LambdaBiz.AWS
         {
             var workflow = await GetCurrentStateAsync(orchestrationId);
             workflow.Status = status;
+
+            if (status == Status.FAILED)
+                workflow.FailedDateTime = DateTime.Now;
+
+            if (status == Status.SUCCEEDED)
+                workflow.SucceededDateTime = DateTime.Now;
+
             await LogStateAsync(workflow);
         }
         public async Task<Workflow> GetCurrentStateAsync(string orchestrationId)

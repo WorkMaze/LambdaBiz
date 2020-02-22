@@ -59,7 +59,7 @@ namespace LambdaBiz.REST
 				return await response.Content.ReadAsStringAsync();
 			}
 			else
-				throw new Exception("Response from RESTService : " + response.StatusCode.ToString() + " : " + response.ReasonPhrase);
+				throw new Exception("Response from RESTService : " + response.StatusCode.ToString());
 			
 		}
 	}

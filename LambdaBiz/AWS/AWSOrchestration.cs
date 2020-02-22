@@ -120,7 +120,7 @@ namespace LambdaBiz.AWS
 			await _amazonSimpleWorkflowClient.SignalWorkflowExecutionAsync(new SignalWorkflowExecutionRequest
 			{
 				Input = JsonConvert.SerializeObject(eventArgs),
-				WorkflowId = _orchestrationId,
+				WorkflowId = orchestrationId,
 				Domain = Constants.LAMBDA_BIZ_DOMAIN,
 				SignalName = eventName
 			});
@@ -641,7 +641,7 @@ namespace LambdaBiz.AWS
 
             var restConfig = new RESTConfig
             {
-                Body = JsonConvert.SerializeObject(input),
+                Body = input == null ? null: JsonConvert.SerializeObject(input),
                 Headers = headers,
                 Method = method,
                 QueryString = queryString,

@@ -20,16 +20,11 @@ namespace LambdaBiz.AWS.Service
             var aws = JsonConvert.DeserializeObject<AWS>(contents);
             try
             {
-
                 while (true)
                 {
-
                     var orch = new AWSRESTService(aws.AccessKeyID, aws.SecretAccessKey, aws.Region);
                     orch.Run("RESTSequence1").Wait();
-
                 }
-
-
             }
             catch (Exception ex)
             {

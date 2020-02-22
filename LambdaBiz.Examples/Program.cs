@@ -1,6 +1,7 @@
 ﻿using LambdaBiz.AWS;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -34,10 +35,9 @@ namespace LambdaBiz.Examples
             var aws = JsonConvert.DeserializeObject<AWS>(contents);
             try
             {
-                Sequence(aws).Wait();
-                RestSequence(aws).Wait();            
+                Parallel.Invoke(() => Sequence(aws).Wait(),()=> RestSequence(aws).Wait(), () => RunService(aws).Wait());
 
-
+                
             }
             catch(Exception ex)
             {
@@ -46,11 +46,20 @@ namespace LambdaBiz.Examples
 
         }
 
+        static async Task RunService(AWS aws)
+        {
+            while (true)
+            {
+                var orch = new AWSRESTService(aws.AccessKeyID, aws.SecretAccessKey, aws.Region);
+                await orch.Run("RESTSequence1");
+            }
+        }
+
         static async Task Sequence(AWS aws)
         {
             var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true,aws.LambdaRole);
 
-            var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence2");
+            var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence3");
 
             try {
 
@@ -106,6 +115,8 @@ namespace LambdaBiz.Examples
                 var c = await orchestration.CallPutAsync<DummyResponse>(url + "update/21", null, null, null, "ServiceOperation3");
 
                 var d = await orchestration.CallDeleteAsync<DummyResponse>(url + "delete/21", null, null, "ServiceOperation4");
+
+                await orchestration.RaiseEventAsync("Approve", "Sequence3", true);
 
                 await orchestration.CompleteWorkflowAsync(d);
             }
