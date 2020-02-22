@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29123.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LambdaBiz", "LambdaBiz\LambdaBiz.csproj", "{AAF48695-80AB-4E8A-831C-8202D4FF052C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaBiz.Examples", "LambdaBiz.Examples\LambdaBiz.Examples.csproj", "{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LambdaBiz.Examples", "LambdaBiz.Examples\LambdaBiz.Examples.csproj", "{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaBiz.AWS.Service", "LambdaBiz.AWS.Service\LambdaBiz.AWS.Service.csproj", "{BE2940B0-065C-4BE6-A9E4-4D9A3DB53D8D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE2940B0-065C-4BE6-A9E4-4D9A3DB53D8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE2940B0-065C-4BE6-A9E4-4D9A3DB53D8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE2940B0-065C-4BE6-A9E4-4D9A3DB53D8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE2940B0-065C-4BE6-A9E4-4D9A3DB53D8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

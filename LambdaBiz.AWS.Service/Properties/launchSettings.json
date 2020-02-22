@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LambdaBiz.AWS.Service": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

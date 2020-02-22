@@ -8,7 +8,8 @@ namespace LambdaBiz.Examples
 {
     class Program
     {
-        internal class AWS        {
+        internal class AWS
+        {
             public string Region { get; set; }
             public string AccessKeyID { get; set; }
             public string SecretAccessKey { get; set; }
@@ -33,8 +34,10 @@ namespace LambdaBiz.Examples
             var aws = JsonConvert.DeserializeObject<AWS>(contents);
             try
             {
-
                 Sequence(aws).Wait();
+                RestSequence(aws).Wait();            
+
+
             }
             catch(Exception ex)
             {
@@ -75,6 +78,44 @@ namespace LambdaBiz.Examples
 
             var currentState = await orchestration.GetCurrentState();
             
+        }
+
+        internal class DummyResponse
+        {
+            public string status { get; set; }
+            public string message { get; set; }
+
+        }
+        static async Task RestSequence(AWS aws)
+        {
+            var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true, aws.LambdaRole);
+
+            var orchestration = await orchestrationFactory.CreateOrchestrationAsync("RESTSequence1");
+
+            try
+            {
+
+                await orchestration.StartWorkflowAsync("REST Workflow Started");
+
+                var url = "http://dummy.restapiexample.com/api/v1/";
+
+                var a = await orchestration.CallGetAsync<DummyResponse>(url + "employees",null,null, "ServiceOperation1");
+
+                var b = await orchestration.CallPostAsync<DummyResponse>(url + "create",null, null, null, "ServiceOperation2");
+
+                var c = await orchestration.CallPutAsync<DummyResponse>(url + "update/21", null, null, null, "ServiceOperation3");
+
+                var d = await orchestration.CallDeleteAsync<DummyResponse>(url + "delete/21", null, null, "ServiceOperation4");
+
+                await orchestration.CompleteWorkflowAsync(d);
+            }
+            catch (Exception ex)
+            {
+                await orchestration.FailWorkflowAsync(ex);
+            }
+
+            var currentState = await orchestration.GetCurrentState();
+
         }
     }
 }

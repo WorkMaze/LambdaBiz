@@ -27,37 +27,39 @@ namespace LambdaBiz.REST
 			}
 			client.DefaultRequestHeaders.Accept.Clear();
 			client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-			HttpContent content = new StringContent(JsonConvert.SerializeObject(input), Encoding.UTF8, "application/json");
+            HttpContent content = null;
 
-			Task<HttpResponseMessage> response = null;
+            if(input != null)
+                content = new StringContent(JsonConvert.SerializeObject(input), Encoding.UTF8, "application/json");
+
+			HttpResponseMessage response = null;
 
 			if (method.ToLower() == "get")
 			{
-				response = client.GetAsync(queryString);
+				response = await client.GetAsync(queryString);
 			}
 			else if (method.ToLower() == "put")
 			{
-				response = client.PutAsync(queryString, content);
+				response = await client.PutAsync(queryString, content);
 			}
 			else if (method.ToLower() == "post")
 			{
-				response = client.PostAsync(queryString, content);
+				response = await client.PostAsync(queryString, content);
 			}
 			else if (method.ToLower() == "delete")
 			{
-				response = client.DeleteAsync(queryString);
+				response = await client.DeleteAsync(queryString);
 			}
 			else
 				throw new Exception("Method : " + method + " not implemented in RESTConnector.");
 
-			response.Wait();
-
-			if (response.Result.IsSuccessStatusCode)
+			
+			if (response.IsSuccessStatusCode)
 			{
-				return await response.Result.Content.ReadAsStringAsync();
+				return await response.Content.ReadAsStringAsync();
 			}
 			else
-				throw new Exception("Response from RESTService : " + response.Result.StatusCode.ToString() + " : " + response.Result.ReasonPhrase);
+				throw new Exception("Response from RESTService : " + response.StatusCode.ToString() + " : " + response.ReasonPhrase);
 			
 		}
 	}

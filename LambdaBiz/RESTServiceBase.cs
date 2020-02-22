@@ -12,7 +12,7 @@ namespace LambdaBiz
         protected abstract Task<RESTActivity> GetScheduledActivityAsync(string orchestrationId);
         protected abstract Task SucceedActivityAsync(string taskToken, string result);
         protected abstract Task FailActivityAsync(string taskToken, string error);
-        public async void Run(string orchestrationId)
+        public async Task Run(string orchestrationId)
         {
             var scheduledActivity = await GetScheduledActivityAsync(orchestrationId);
 

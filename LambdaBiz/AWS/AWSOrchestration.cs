@@ -44,7 +44,9 @@ namespace LambdaBiz.AWS
 		{
 			var result = string.Empty;
 
-			var workflowContext = await GetCurrentContext();
+            Activity activity = null;
+
+            var workflowContext = await GetCurrentContext();
 
 			if (workflowContext != null && workflowContext.Status == Status.STARTED)
 			{
@@ -77,8 +79,8 @@ namespace LambdaBiz.AWS
                 {
                     await SetMarker(Model.ActivityType.Task, functionName, id, status, workflowContext.ReferenceToken);
                     await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
-                    var activity = FindActivity(Model.ActivityType.Task, id, functionName, workflowContext.Activities);
-                    result = activity.Result;
+                    activity = FindActivity(Model.ActivityType.Task, id, functionName, workflowContext.Activities);
+                   
                 }
 
                 if (status == Status.NONE || status == Status.SCHEDULED || status == Status.STARTED)
@@ -94,19 +96,19 @@ namespace LambdaBiz.AWS
 					}
 					while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
-					var activity = FindActivity(Model.ActivityType.Task, id, functionName, workflowWaitContext.Activities);
+					activity = FindActivity(Model.ActivityType.Task, id, functionName, workflowWaitContext.Activities);
 
-					if (waitStatus == Status.FAILED)
-						throw new Exception(activity.FailureDetails);
-
-					if (waitStatus == Status.TIMEOUT)
-						throw new Exception("Time-Out");
-
-					result = activity.Result;
 				}
 			}
 
-			return result;
+            if (activity.Status == Status.FAILED)
+                throw new Exception(activity.FailureDetails);
+
+            if (activity.Status == Status.TIMEOUT)
+                throw new Exception("Time-Out");
+
+            result = activity.Result;
+            return result;
 		}
 
 		#endregion
@@ -635,6 +637,7 @@ namespace LambdaBiz.AWS
         private async Task<string> CallServiceAsync(string url, string method, string queryString, object input, Dictionary<string, string> headers, string id)
         {
             var result = string.Empty;
+            Activity activity = null;
 
             var restConfig = new RESTConfig
             {
@@ -674,8 +677,12 @@ namespace LambdaBiz.AWS
                                     TaskList = new TaskList
                                     {
                                         Name = Constants.LAMBDA_BIZ_TASK_LIST + _orchestrationId
-                                    }
-                                }
+                                    },
+                                    StartToCloseTimeout = "NONE",
+                                    ScheduleToCloseTimeout = "NONE",
+                                    ScheduleToStartTimeout = "NONE",
+                                    HeartbeatTimeout = "NONE"
+                                },
                             }
                         }
                     };
@@ -686,8 +693,8 @@ namespace LambdaBiz.AWS
                 {
                     await SetMarker(Model.ActivityType.Task, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, id, status, workflowContext.ReferenceToken);
                     await RaiseEventAsync(Constants.LAMBDA_BIZ_EVENT, _orchestrationId, Constants.LAMBDA_BIZ_EVENT);
-                    var activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowContext.Activities);
-                    result = activity.Result;
+                    activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowContext.Activities);
+                    
                 }
 
                 if (status == Status.NONE || status == Status.SCHEDULED || status == Status.STARTED)
@@ -705,18 +712,18 @@ namespace LambdaBiz.AWS
                     }
                     while (waitStatus != Status.SUCCEEDED && waitStatus != Status.FAILED && waitStatus != Status.TIMEOUT);
 
-                    var activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowWaitContext.Activities);
+                    activity = FindActivity(Model.ActivityType.Task, id, Constants.LAMBDA_BIZ_ACTIVITY_TYPE, workflowWaitContext.Activities);
 
-                    if (waitStatus == Status.FAILED)
-                        throw new Exception(activity.FailureDetails);
-
-                    if (waitStatus == Status.TIMEOUT)
-                        throw new Exception("Time-Out");
-
-                    result = activity.Result; 
                 }
             }
 
+            if (activity.Status == Status.FAILED)
+                throw new Exception(activity.FailureDetails);
+
+            if (activity.Status == Status.TIMEOUT)
+                throw new Exception("Time-Out");
+
+            result = activity.Result;
             return result;
         }
 
