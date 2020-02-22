@@ -72,14 +72,18 @@ namespace LambdaBiz.Examples
         /// <returns></returns>
         static async Task Sequence(AWS aws)
         {
+            /// Initialize orchestration factory for AWS
             var orchestrationFactory = new AWSOrchestrationFactory(aws.AccessKeyID, aws.SecretAccessKey, aws.Region, true,aws.LambdaRole);
 
+            /// Create a new orchestration
             var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence3");
 
             try {
 
+                /// Start workflow
                 await orchestration.StartWorkflowAsync("Workflow Started");
 
+                /// Call AWS lambda task
                 var a = await orchestration.CallTaskAsync<Numbers>("Number", new Numbers { Number1 = 15, Number2 = 5 }, "Operation1");
 
                 var b = await orchestration.CallTaskAsync<OperationResult>("Sum", a, "Operation2");
@@ -90,15 +94,20 @@ namespace LambdaBiz.Examples
 
                 var e = await orchestration.CallTaskAsync<OperationResult>("Quotient", a, "Operation5");
 
+                /// Start timer
                 await orchestration.StartTimerAsync("30SecTimer", new TimeSpan(0, 0, 0, 30, 0));
 
+                /// Wait for user input
                 var approved = await orchestration.WaitForEventAsync<bool>("Approve");
 
+                /// Complete workflow
                 await orchestration.CompleteWorkflowAsync(e);
             }
             catch(Exception ex)
             {
-                await orchestration.FailWorkflowAsync(ex);            }
+                /// Fail workflow
+                await orchestration.FailWorkflowAsync(ex);
+            }
 
             var currentState = await orchestration.GetCurrentState();
             
