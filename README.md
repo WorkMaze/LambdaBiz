@@ -10,34 +10,30 @@ The framework relies upon the AWS SWF (Simple Workflow Framework) to maintain th
 
 ## Orcestrating lambda tasks
 ```C#
-            /// Initialize orchestration factory for AWS
-            var orchestrationFactory = new AWSOrchestrationFactory(awsAccessKeyID, awsSecretAccessKey, awsRegion, true,awsLambdaRole);
+/// Initialize orchestration factory for AWS
+var orchestrationFactory = new AWSOrchestrationFactory(awsAccessKeyID, awsSecretAccessKey, awsRegion, true,awsLambdaRole);
 
-            /// Create a new orchestration
-            var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence3");
+/// Create a new orchestration
+var orchestration = await orchestrationFactory.CreateOrchestrationAsync("Sequence3");
+try
+{
+            /// Start workflow
+            await orchestration.StartWorkflowAsync("Workflow Started");
 
-            try {
+            /// Call AWS lambda task
+            var a = await orchestration.CallTaskAsync<Numbers>("Number", new Numbers { Number1 = 15, Number2 = 5 }, "Operation1");
 
-                /// Start workflow
-                await orchestration.StartWorkflowAsync("Workflow Started");
+            var b = await orchestration.CallTaskAsync<OperationResult>("Sum", a, "Operation2");
+            var c = await orchestration.CallTaskAsync<OperationResult>("Difference", a, "Operation3");
+            var d = await orchestration.CallTaskAsync<OperationResult>("Product", a, "Operation4");
+            var e = await orchestration.CallTaskAsync<OperationResult>("Quotient", a, "Operation5");
 
-                /// Call AWS lambda task
-                var a = await orchestration.CallTaskAsync<Numbers>("Number", new Numbers { Number1 = 15, Number2 = 5 }, "Operation1");
-
-                var b = await orchestration.CallTaskAsync<OperationResult>("Sum", a, "Operation2");
-
-                var c = await orchestration.CallTaskAsync<OperationResult>("Difference", a, "Operation3");
-
-                var d = await orchestration.CallTaskAsync<OperationResult>("Product", a, "Operation4");
-
-                var e = await orchestration.CallTaskAsync<OperationResult>("Quotient", a, "Operation5");
-
-                /// Complete workflow
-                await orchestration.CompleteWorkflowAsync(e);
-            }
-            catch(Exception ex)
-            {
-                /// Fail workflow
-                await orchestration.FailWorkflowAsync(ex);
-            }
+            /// Complete workflow
+            await orchestration.CompleteWorkflowAsync(e);
+}
+catch(Exception ex)
+{
+            /// Fail workflow
+            await orchestration.FailWorkflowAsync(ex);
+}
 ```
