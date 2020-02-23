@@ -93,3 +93,15 @@ while (true)
             await orch.Run("RESTSequence1");
 }
 ```
+
+## Use your own backend
+LambdaBiz uses AWS SWF as the default back-end and DynamoDB as the default persistent store. However, it is possible to create your own back-end and store using the framework. Maybe, you want to use SQL,MySql or some other no SQL as the back-end.
+
+### Create your own back-end
+Implement **IOrchestrationFactory** to create your own factory based on your back-end.
+Implement **IOrchestration** to create your own orchestration container based on your back-end.
+
+### Create your own persistent store
+Implement **IPersistantStore** to create your own persistent store.
+
+
