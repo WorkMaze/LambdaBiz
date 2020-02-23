@@ -27,6 +27,14 @@ namespace LambdaBiz.AWS
         }
 
 		#region Task
+        /// <summary>
+        /// Calls a lamda function
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="functionName">Lambda function name</param>
+        /// <param name="input">Input to the lambda function</param>
+        /// <param name="id">Unique id for the operation</param>
+        /// <returns></returns>
 		public async Task<T> CallTaskAsync<T>(string functionName, object input, string id)
 		{			
 			var result = await CallLambdaAsync(functionName, input, id);
@@ -34,7 +42,15 @@ namespace LambdaBiz.AWS
 			return JsonConvert.DeserializeObject<T>(result);
 		}
 
-		public async Task<object> CallTaskAsync(string functionName, object input, string id)
+        /// <summary>
+        /// Calls a lamda function
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="functionName">Lambda function name</param>
+        /// <param name="input">Input to the lambda function</param>
+        /// <param name="id">Unique id for the operation</param>
+        /// <returns></returns>
+        public async Task<object> CallTaskAsync(string functionName, object input, string id)
 		{
 			var result = await CallLambdaAsync(functionName, input, id);
 
@@ -115,6 +131,13 @@ namespace LambdaBiz.AWS
 
 		#region Event
 
+        /// <summary>
+        /// Raises an event in another orchestration
+        /// </summary>
+        /// <param name="eventName">Unique name of the event</param>
+        /// <param name="orchestrationId">The id of the orchestrtaion to signal</param>
+        /// <param name="eventArgs">The event arguments</param>
+        /// <returns></returns>
 		public async Task RaiseEventAsync(string eventName, string orchestrationId, object eventArgs)
 		{
 			await _amazonSimpleWorkflowClient.SignalWorkflowExecutionAsync(new SignalWorkflowExecutionRequest
@@ -127,6 +150,12 @@ namespace LambdaBiz.AWS
 			
 		}
 
+        /// <summary>
+        /// Waits for an external event
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="eventName">The name o the event to wait for</param>
+        /// <returns></returns>
 		public async  Task<T> WaitForEventAsync<T>(string eventName)
 		{
 			var result = await WaitForSignal(eventName);
@@ -134,7 +163,14 @@ namespace LambdaBiz.AWS
 			return JsonConvert.DeserializeObject<T>(result);
 		}
 
-		public async Task<object> WaitForEventAsync(string eventName)
+
+        /// <summary>
+        /// Waits for an external event
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="eventName">The name o the event to wait for</param>
+        /// <returns></returns>
+        public async Task<object> WaitForEventAsync(string eventName)
 		{
 			var result = await WaitForSignal(eventName);
 
@@ -172,6 +208,12 @@ namespace LambdaBiz.AWS
 		#endregion
 
 		#region Timer
+        /// <summary>
+        /// Starts a timer
+        /// </summary>
+        /// <param name="timerName">Unique name for the timer</param>
+        /// <param name="timeSpan"><The duration of the timer/param>
+        /// <returns></returns>
 		public async Task StartTimerAsync(string timerName, TimeSpan timeSpan)
 		{
 			
@@ -230,7 +272,11 @@ namespace LambdaBiz.AWS
 		#endregion
 
 		#region Workflow
-
+        /// <summary>
+        /// Starts the workflow
+        /// </summary>
+        /// <param name="input">The inout for the workflow</param>
+        /// <returns></returns>
 		public async Task StartWorkflowAsync(object input)
 		{
             
@@ -260,12 +306,16 @@ namespace LambdaBiz.AWS
             catch(WorkflowExecutionAlreadyStartedException)
             {
                 
-            }
-            
+            }     
            
 			
 		}
 
+        /// <summary>
+        /// Completes the workflow
+        /// </summary>
+        /// <param name="result">The end result of the workflow</param>
+        /// <returns></returns>
 		public async Task CompleteWorkflowAsync(object result)
 		{
 			var workflowContext = await GetCurrentContext();
@@ -293,6 +343,11 @@ namespace LambdaBiz.AWS
 			}
 		}
 
+        /// <summary>
+        /// Copletes the workflow with a failed status
+        /// </summary>
+        /// <param name="error">The error that the workflow failed with</param>
+        /// <returns></returns>
 		public async Task FailWorkflowAsync(object error)
 		{
 			var workflowContext = await GetCurrentContext();
@@ -579,6 +634,10 @@ namespace LambdaBiz.AWS
 		#endregion
 
 		#region Status
+        /// <summary>
+        /// Gets the current orchestration status from the ersistent store (if specified).
+        /// </summary>
+        /// <returns></returns>
 		public async Task<Workflow> GetCurrentState()
 		{
 			return await _store.GetCurrentStateAsync(this._orchestrationId);
@@ -586,49 +645,125 @@ namespace LambdaBiz.AWS
 		#endregion
 
 		#region REST
+        /// <summary>
+        /// Calls REST GET
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="headers"></param>
+        /// <param name="id">Unique id for the operation</param>
+        /// <returns></returns>
 		public async Task<T> CallGetAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
             var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> CallGetAsync(string url, string queryString, Dictionary<string, string> headers, string id)
+        /// <summary>
+        /// Calls REST GET
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="headers"></param>
+        /// <param name="id">Unique id for the operation</param>
+        /// <returns></returns>
+        public async Task<object> CallGetAsync(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "get", queryString, null, headers, id);
             return JsonConvert.DeserializeObject(response);
 		}
 
+        /// <summary>
+        /// Calls a REST DELETE
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="headers"></param>
+        /// <param name="id">Unique od for the operation</param>
+        /// <returns></returns>
 		public async Task<T> CallDeleteAsync<T>(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> CallDeleteAsync(string url, string queryString, Dictionary<string, string> headers, string id)
+        /// <summary>
+        /// Calls a REST DELETE
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="headers"></param>
+        /// <param name="id">Unique od for the operation</param>
+        /// <returns></returns>
+        public async Task<object> CallDeleteAsync(string url, string queryString, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "delete", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
+        /// <summary>
+        /// Calls a REST POST
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="body"></param>
+        /// <param name="headers"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
 		public async Task<T> CallPostAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
+        /// <summary>
+        /// Calls a REST POST
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="body"></param>
+        /// <param name="headers"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
 		public async Task<object> CallPostAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "post", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject(response);
 		}
 
+        /// <summary>
+        /// Calls a REST PUT
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="body"></param>
+        /// <param name="headers"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
 		public async Task<T> CallPutAsync<T>(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "put", queryString, body, headers,id);
 			return JsonConvert.DeserializeObject<T>(response);
 		}
 
-		public async Task<object> CallPutAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id)
+        /// <summary>
+        /// Calls a REST PUT
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">Url of the REST service</param>
+        /// <param name="queryString"></param>
+        /// <param name="body"></param>
+        /// <param name="headers"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<object> CallPutAsync(string url, string queryString, object body, Dictionary<string, string> headers, string id)
 		{
 			var response = await CallServiceAsync(url, "put", queryString, null, headers,id);
 			return JsonConvert.DeserializeObject(response);

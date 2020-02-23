@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace LambdaBiz
 {
+    /// <summary>
+    /// Interface to implmenet your own orchestration container
+    /// </summary>
     public interface IOrchestration
     {
         Task<T> CallTaskAsync<T>(string functionName,object input,string id);

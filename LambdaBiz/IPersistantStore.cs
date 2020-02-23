@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace LambdaBiz
 {
+    /// <summary>
+    /// Interface to implement your own persistent store
+    /// </summary>
     public interface IPersistantStore
     {
         Task<bool> StoreExistsAsync();

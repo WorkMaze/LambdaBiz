@@ -21,6 +21,12 @@ namespace LambdaBiz.AWS
             if (usePersistantStore)
                 _store = new AWSPeristantStore(awsAccessKey, awsSecretAccessKey, awsRegion);
         }
+
+        /// <summary>
+        /// Create orchestartion
+        /// </summary>
+        /// <param name="orchestrationId">Unique id to identify the orchestration</param>
+        /// <returns></returns>
 		public async Task<IOrchestration> CreateOrchestrationAsync(string orchestrationId)
 		{
 			try
