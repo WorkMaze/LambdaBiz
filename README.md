@@ -10,12 +10,17 @@ The framework relies upon the AWS SWF (Simple Workflow Framework) to maintain th
 
 ## Terminology
 
-*OrchestrationFactory* A store in AWS for creating orchestrations and saving them in a persistent store (if the parameter is set). The persistent storage is AWS DynamoDB. AWS SWF stores the state of orchestrations for 1 year.
-*Orchestration* A Workflow instance which is identified by a unique *OrchestrationId*.
-*Task* An AWS lambda function called in an orchestration identified by a unique *OperationId*.
-*Timer* A timer identified by a unique *TimerId*.
-*Event* An external trigger identified by a unique *EventId*.
-*Service* A call to an external REST Service (GET,POST,PUT or DELETE) identified by a unique *OperationId*.
+**OrchestrationFactory** A store in AWS for creating orchestrations and saving them in a persistent store (if the parameter is set). The persistent storage is AWS DynamoDB. AWS SWF stores the state of orchestrations for 1 year.
+
+**Orchestration** A Workflow instance which is identified by a unique **OrchestrationId**.
+
+**Task** An AWS lambda function called in an orchestration identified by a unique **OperationId**.
+
+**Timer** A timer identified by a unique **TimerId**.
+
+**Event** An external trigger identified by a unique **EventId**.
+
+**Service** A call to an external REST Service (GET,POST,PUT or DELETE) identified by a unique **OperationId**.
 
 ## Orchestrating lambda tasks
 ```C#
