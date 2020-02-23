@@ -71,7 +71,7 @@ var approved = await orchestration.WaitForEventAsync<bool>("Approve");
 ## Raise event in another orchestration
 ```C#
 /// Wait for user input
-var approved = await orchestration.WaitForEventAsync<bool>("Approve");
+await orchestration.RaiseEventAsync("Approve", "Sequence3", true);
 ```
 
 
