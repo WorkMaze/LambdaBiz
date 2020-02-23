@@ -60,7 +60,7 @@ catch(Exception ex)
 ## Timers
 ```C#
 /// Start timer
-await orchestration.StartTimerAsync("30SecTimer", new TimeSpan(0, 0, 0, 30, 0));
+await orchestration.RaiseEventAsync("Approve", "Sequence3", true);
 ```
 
 ## Wait for user input
@@ -68,6 +68,12 @@ await orchestration.StartTimerAsync("30SecTimer", new TimeSpan(0, 0, 0, 30, 0));
 /// Wait for user input
 var approved = await orchestration.WaitForEventAsync<bool>("Approve");
 ```
+## Raise event in another orchestration
+```C#
+/// Wait for user input
+var approved = await orchestration.WaitForEventAsync<bool>("Approve");
+```
+
 
 ## Get Orchestartion status from the persistent store
 The framework can be queried to get the current status of the orchestration. The state of the orchestration is saved periodically in the persistent store which is DynamoDB for AWS. **This will only be active if the corresponding paramter in the construction of AWSORchestrtaionFactory is set to TRUE**.
