@@ -2,6 +2,22 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>AWS lambda enables users to write serverless functions. However, a lambda function can have a maximum execution time of 15 minutes after which it times out. Hence, it is not possible to write long running processes in AWS lambda. AWS has introduced step functions to overcome this shortcomming. However, there is a steep learning curve to learn the state machine language and the service itself comes at a premium cost.
+      The purpose of this project is to enable existing C# users of AWS to write long running orchestrations which are durable.
+    </Description>
+    <PackageProjectUrl>https://github.com/WorkMaze/LambdaBiz</PackageProjectUrl>
+    <Copyright>Neeraj Salpekar 2020</Copyright>
+    <PackageLicenseUrl>https://github.com/WorkMaze/LambdaBiz/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageTags>AWS;Lambda;Durable;Stateful;Serverless;Orchestrations</PackageTags>
+    <RepositoryUrl>https://github.com/WorkMaze/LambdaBiz</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>First version of LambdaBiz</PackageReleaseNotes>
+    <Title>Create Long running stateful orchestrations in C# using AWS Lambda</Title>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <RepositoryType>C#</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
