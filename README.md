@@ -60,7 +60,7 @@ catch(Exception ex)
 ## Timers
 ```C#
 /// Start timer
-await orchestration.RaiseEventAsync("Approve", "Sequence3", true);
+await orchestration.StartTimerAsync("30SecTimer", new TimeSpan(0, 0, 0, 30, 0));
 ```
 
 ## Wait for user input
