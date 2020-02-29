@@ -22,6 +22,14 @@ namespace LambdaBiz.AWS
                 _store = new AWSPeristantStore(awsAccessKey, awsSecretAccessKey, awsRegion);
         }
 
+        public AWSOrchestrationFactory( bool usePersistantStore, string lambdaRole)
+        {
+            _amazonSimpleWorkflowClient = new AmazonSimpleWorkflowClient();
+            _lambdaRole = lambdaRole;
+            if (usePersistantStore)
+                _store = new AWSPeristantStore( );
+        }
+
         /// <summary>
         /// Create orchestartion
         /// </summary>
@@ -34,7 +42,7 @@ namespace LambdaBiz.AWS
 				await _amazonSimpleWorkflowClient.RegisterDomainAsync(new RegisterDomainRequest
 				{
 					Name = Constants.LAMBDA_BIZ_DOMAIN,
-					WorkflowExecutionRetentionPeriodInDays = "0"
+					WorkflowExecutionRetentionPeriodInDays = "90"
 				});
 			}
 			catch(DomainAlreadyExistsException)

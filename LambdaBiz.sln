@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LambdaBiz", "LambdaBiz\Lamb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LambdaBiz.Examples", "LambdaBiz.Examples\LambdaBiz.Examples.csproj", "{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LambdaBiz.Serverless", "LambdaBiz.Serverless\LambdaBiz.Serverless.csproj", "{A1985253-B4E3-4478-BEC6-B8E21AB68623}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A7AE728-C4B3-4DA2-97FB-A24D53ABBB5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1985253-B4E3-4478-BEC6-B8E21AB68623}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1985253-B4E3-4478-BEC6-B8E21AB68623}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1985253-B4E3-4478-BEC6-B8E21AB68623}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1985253-B4E3-4478-BEC6-B8E21AB68623}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

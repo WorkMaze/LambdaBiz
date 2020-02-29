@@ -19,6 +19,12 @@ namespace LambdaBiz.AWS
 
         }
 
+        internal AWSPeristantStore()
+        {
+            _amazonDynamoDbClient = new AmazonDynamoDBClient();
+
+        }
+
         public async Task SetStatus(string orchestrationId, Status status)
         {
             var workflow = await GetCurrentStateAsync(orchestrationId);
