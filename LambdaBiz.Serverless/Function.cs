@@ -5,7 +5,6 @@ using System.Net;
 using System.Threading.Tasks;
 using LambdaBiz.AWS;
 using Newtonsoft.Json;
-
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 
@@ -98,12 +97,11 @@ namespace LambdaBiz.Serverless
         }
 
         /// <summary>
-        /// A Lambda function to respond to HTTP Get methods from API Gateway
+        /// Lambda function
         /// </summary>
         /// <param name="request"></param>
-        /// <returns>The list of blogs</returns>
-        /// 
-
+        /// <param name="context"></param>
+        /// <returns></returns>
         public Model.Workflow Process(Request request, ILambdaContext context)
         {
             var result = ProcessAsync(request, context);
