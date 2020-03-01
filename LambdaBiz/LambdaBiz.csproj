@@ -12,9 +12,9 @@
     <RepositoryUrl>https://github.com/WorkMaze/LambdaBiz</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>First version of LambdaBiz</PackageReleaseNotes>
+    <PackageReleaseNotes>Added passing credentials using AWS instance profile service</PackageReleaseNotes>
     <Title>Create Long running stateful orchestrations in C# using AWS Lambda</Title>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
     <RepositoryType>C#</RepositoryType>
